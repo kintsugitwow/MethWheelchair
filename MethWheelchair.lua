@@ -15,6 +15,7 @@ local MovementTypes = {
     "TURNRIGHT",
     "STRAFELEFT",
     "STRAFERIGHT",
+    "MOVEANDSTEER",
 }
 
 local Keybinds = {}
