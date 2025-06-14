@@ -1,6 +1,6 @@
 # MethWheelchair
 
-Disables movement keybinds after standing still for at least one frame after Shackles of the Legion cast has started. After debuff is gone re-enables keybinds. 
+Disables movement keybinds after standing still for at least one frame after Shackles of the Legion cast has started. After debuff is gone or after 6.5 seconds after cast event re-enables keybinds. 
 
 
 Use ``/run MethWheelchair.Restore()`` macro to forcefully restore your keybinds.
