@@ -135,6 +135,7 @@ EventFrame:RegisterEvent("UNIT_CASTEVENT")
 
 EventFrame:SetScript("OnEvent", function()
     if (event == "PLAYER_ENTERING_WORLD") then
+        this:UnregisterEvent("PLAYER_ENTERING_WORLD")
         --Print("player entering world")
         SaveKeybinds()
     elseif (event == "CHAT_MSG_SPELL_AURA_GONE_SELF") then
