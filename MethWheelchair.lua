@@ -1,5 +1,10 @@
 MethWheelchair = {}
 
+BINDING_HEADER_METHWHEELCHAIR = "MethWheelchair"
+
+METHWHEELCHAIR_CONFIG = {
+    INCLUDE_START_EVENT = false,
+}
 
 local ShouldUnbind = false
 local PreviousPostion_X = 0
@@ -47,7 +52,7 @@ local function PrintKeybinds()
             key2 = "\124cffff0000"..tostring(keybind[2]).."\124r"
         end
 
-        Print("\124cff4488ff"..mt.."\124r: key1: "..key1.."; key2: "..key2)
+        Print("\124cff4488ff"..mt.."\124r: key1: "..key1..", key2: "..key2)
     end
 end
 
@@ -66,18 +71,20 @@ end
 local function PrintCurrentKeybinds()
     for k, mt in MovementTypes do
         local key1, key2 = GetBindingKey(mt)
-        Print(mt..": key1: "..tostring(key1).." key2: "..tostring(key2))
+        Print(mt..": key1: "..tostring(key1)..", key2: "..tostring(key2))
     end
 end
 
 local function UnbindAllKeybinds()
+    local replacementActionId = 1
     for mt, keybind in Keybinds do
         if (keybind[1]) then
-            SetBinding(keybind[1], nil)
+            SetBinding(keybind[1], "METHWHEELCHAIR_REPLACEMENT_ACTION_"..tostring(replacementActionId))
         end
         if (keybind[2]) then
-            SetBinding(keybind[2], nil)
+            SetBinding(keybind[2], "METHWHEELCHAIR_REPLACEMENT_ACTION_"..tostring(replacementActionId))
         end
+        replacementActionId = replacementActionId + 1
     end
 
     --MoveForwardStop() -- blocked
@@ -156,11 +163,18 @@ EventFrame:SetScript("OnEvent", function()
         --local _, playerGUID = UnitExists("PLAYER")
         --local playerName = UnitName("PLAYER")
 
-        if (event == "CAST" and (
+        if (METHWHEELCHAIR_CONFIG.INCLUDE_START_EVENT and event == "START" and (
             spellID == 51916 -- Shackles of the Legion
             --or spellID == 168 -- Frost Armor (Rank 1) (test)
         )) then
             MethWheelchair.Unbind(castDuration)
+        end
+
+        if (event == "CAST" and (
+            spellID == 51916 -- Shackles of the Legion
+            --or spellID == 168 -- Frost Armor (Rank 1) (test)
+        )) then
+            MethWheelchair.Unbind(0)
         end
     end
 end)
