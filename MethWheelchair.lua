@@ -29,6 +29,8 @@ for k, mt in MovementTypes do
     Keybinds[mt] = {}
 end
 
+local old_CameraOrSelectOrMoveStart = CameraOrSelectOrMoveStart
+
 local function Print(msg, r, g, b, a)
     return DEFAULT_CHAT_FRAME:AddMessage(msg, r, g, b, a)
 end
@@ -130,6 +132,7 @@ end
 function MethWheelchair.Restore()
     ShouldUnbind = false
     RestoreKeybinds()
+    CameraOrSelectOrMoveStart = old_CameraOrSelectOrMoveStart
 end
 
 
@@ -186,6 +189,10 @@ local function TryUnbind(px, py)
         if (ShouldUnbind) then
             Print("Movement \124cffff0000disabled\124r.")
             UnbindAllKeybinds()
+            -- disable camera movement on left click,
+            -- results in not being able to move using left and right mouse buttons
+            CameraOrSelectOrMoveStart = function() end
+
             ShouldUnbind = false
         end
     end
