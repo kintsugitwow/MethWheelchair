@@ -58,6 +58,7 @@ local MovementTypes = {
     "STRAFELEFT",
     "STRAFERIGHT",
     "MOVEANDSTEER",
+    "TOGGLEAUTORUN",
 }
 
 local Keybinds = {}
@@ -563,7 +564,7 @@ EventFrame:SetScript("OnUpdate", function()
 
     -- non superwow position, hope map is correctly bound in ??? zone
     elseif (ShouldUnbind -- check to prevent lags while map is open, can result in one frame delay
-            or GetZoneText() == "???" -- even one frame is too long in boss fight, map shouldn't be open
+            or (GetZoneText() == "???") -- even one frame is too long in boss fight, map shouldn't be open
         ) then
         local px, py = GetPlayerMapPosition("PLAYER")
         if ((not px) or (not py) or (px == 0 and py == 0)) then
