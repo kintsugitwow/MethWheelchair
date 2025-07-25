@@ -3,11 +3,11 @@ mw = MethWheelchair
 
 BINDING_HEADER_METHWHEELCHAIR = "MethWheelchair"
 local ADDON_PREFIX = "METHWHEELCHAIR"
-local ADDON_VERSION = 1.01
+local ADDON_VERSION = 1.02
 
 local CONFIG_DEFAULT_VALUE = {
     LOGIN_INFO = true, -- display in chat window
-    BLOCK_LMB = true, -- blocks moving my pressing both mouse buttons but disables MOVEANDSTEER action as well as Left Mouse Button clicks in world - only registered by UI - can't target enemies without nameplates 
+    BLOCK_LMB = true, -- blocks moving my pressing both mouse buttons but disables Left Mouse Button clicks in world - only registered by UI - can't target enemies by clicking models, do it by clicking nameplates or tab target
     SUPER_WOW = true, -- use superwow functions, (as for now most important for position)
     UNIT_CASTEVENT = false, -- combat log should be better
     INCLUDE_START_EVENT = false, -- just anoying, player should know when to stop moving, not block him 2 sec before
@@ -59,6 +59,7 @@ local MovementTypes = {
     "STRAFERIGHT",
     "MOVEANDSTEER",
     "TOGGLEAUTORUN",
+    "CAMERAORSELECTORMOVE", -- safer way to block left mouse button, BLOCK_LMB setting handled in unbind handler
 }
 
 local Keybinds = {}
@@ -68,14 +69,31 @@ for k, mt in MovementTypes do
 end
 
 -- hook
-local old_CameraOrSelectOrMoveStart = CameraOrSelectOrMoveStart
+--local old_CameraOrSelectOrMoveStart = CameraOrSelectOrMoveStart
 
 local strfind = string.find
 local strlower = string.lower
 
+local VersionCheckTimeLimit = nil
+local VersionCheckRepliers = {}
 
 local function Print(msg, r, g, b, a)
     return DEFAULT_CHAT_FRAME:AddMessage("\124cffffffff[\124r\124cffa044b9MethWheelchair\124r\124cffffffff]:\124r "..tostring(msg), r, g, b, a)
+end
+
+
+local function GetClassColor(unit)
+	local _, class = UnitClass(unit)
+	if (class == "DRUID") then return "FF7C0A" end
+	if (class == "HUNTER") then return "AAD372" end
+	if (class == "MAGE") then return "3FC7EB" end
+	if (class == "PALADIN") then return "F48CBA" end
+	if (class == "PRIEST") then return "FFFFFF" end
+	if (class == "ROGUE") then return "FFF468" end
+	if (class == "SHAMAN") then return "0070DD" end
+	if (class == "WARLOCK") then return "8788EE" end
+	if (class == "WARRIOR") then return "C69B6D" end
+    return "FFFFFF"
 end
 
 
@@ -89,6 +107,11 @@ local function InitSetting(setting)
         METHWHEELCHAIR_CONFIG[setting] = CONFIG_DEFAULT_VALUE[setting]
     end
     return true
+end
+
+
+local function PrintVersion()
+    Print("Version: "..tostring(ADDON_VERSION))
 end
 
 
@@ -153,21 +176,37 @@ end
 local function UnbindAllKeybinds()
     local replacementActionId = 1
     for mt, keybind in Keybinds do
-        if (keybind[1]) then
-            SetBinding(keybind[1], "METHWHEELCHAIR_REPLACEMENT_ACTION_"..tostring(replacementActionId))
+
+        if (
+            (mt == "CAMERAORSELECTORMOVE" and METHWHEELCHAIR_CONFIG.BLOCK_LMB == false)
+        ) then
+            -- continue...
+        else
+            -- unbind
+            if (keybind[1]) then
+                SetBinding(keybind[1], "METHWHEELCHAIR_REPLACEMENT_ACTION_"..tostring(replacementActionId))
+            end
+            if (keybind[2]) then
+                SetBinding(keybind[2], "METHWHEELCHAIR_REPLACEMENT_ACTION_"..tostring(replacementActionId))
+            end
+            replacementActionId = replacementActionId + 1
         end
-        if (keybind[2]) then
-            SetBinding(keybind[2], "METHWHEELCHAIR_REPLACEMENT_ACTION_"..tostring(replacementActionId))
-        end
-        replacementActionId = replacementActionId + 1
     end
 
     --MoveForwardStop() -- protected function, blocked
 
     for k, mt in MovementTypes do
         local key1, key2 = GetBindingKey(mt)
-        if (key1) then
-            Print("Failed to unbind key: "..tostring(key1))
+
+        if (
+            (mt == "CAMERAORSELECTORMOVE" and METHWHEELCHAIR_CONFIG.BLOCK_LMB == false)
+        ) then
+            -- continue...
+        else
+            -- check fail
+            if (key1) then
+                Print("\124cffffbb00Failed to unbind key: \124r"..tostring(key1))
+            end
         end
     end
 
@@ -177,17 +216,17 @@ end
 
 local function RestoreKeybinds()
     for mt, keybind in Keybinds do
-        if (mt == "MOVEANDSTEER" and METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
-            -- do nothing, otherwise protected function error pops up
-            -- because blocking Left Mouse Button involves hooking and reassigning semi-protected function
-        else
+        --if (mt == "MOVEANDSTEER" and METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
+        --    -- do nothing, otherwise protected function error pops up
+        --    -- because blocking Left Mouse Button involves hooking and reassigning semi-protected function
+        --else
             if (keybind[1]) then
                 SetBinding(keybind[1], mt)
             end
             if (keybind[2]) then
                 SetBinding(keybind[2], mt)
             end
-        end
+        --end
     end
 
     Unbound = false
@@ -214,7 +253,6 @@ end
 function MethWheelchair.Restore()
     ShouldUnbind = false
     RestoreKeybinds()
-    CameraOrSelectOrMoveStart = old_CameraOrSelectOrMoveStart
 end
 
 
@@ -318,6 +356,10 @@ function()
     UnregisterEvent("PLAYER_ENTERING_WORLD")
     local loginInfo = METHWHEELCHAIR_CONFIG.LOGIN_INFO
 
+    if (loginInfo) then
+        PrintVersion()
+    end
+
     SaveKeybinds(loginInfo)
 
     if (loginInfo) then
@@ -402,6 +444,15 @@ function()
                 SendAddonMessage(ADDON_PREFIX, msg, "RAID")
             end
 
+            if (args[3] == "superwowversion") then
+                local requester = args[2]
+                local name = UnitName("PLAYER")
+                local version = tostring(SUPERWOW_VERSION)
+
+                local msg = "answer;"..requester..";superwowversion;"..name..";"..version..";"
+                SendAddonMessage(ADDON_PREFIX, msg, "RAID")
+            end
+
             if (args[3] == "setting") then
                 local requester = args[2]
                 local name = UnitName("PLAYER")
@@ -472,6 +523,7 @@ function()
             if (args[3] == "version") then
                 local sender = args[4]
                 local version = args[5]
+                VersionCheckRepliers[sender] = version
                 if (tonumber(version) < ADDON_VERSION) then
                     version = "\124cffff0000"..version.."\124r"
                 else
@@ -479,6 +531,21 @@ function()
                 end
 
                 Print("Version check: "..sender..": "..version)
+            end
+
+            if (args[3] == "superwowversion") then
+                local sender = args[4]
+                local version = args[5]
+                VersionCheckRepliers[sender] = version
+                if ((not tonumber(version)) or (not SUPERWOW_VERSION)) then
+                    version = "\124cffff0000"..version.."\124r"
+                elseif (tonumber(version) < tonumber(SUPERWOW_VERSION)) then
+                    version = "\124cffff0000"..version.."\124r"
+                else
+                    version = "\124cff00ff00"..version.."\124r"
+                end
+
+                Print("SuperWoW version check: "..sender..": "..version)
             end
 
             if (args[3] == "setting") then
@@ -531,6 +598,11 @@ end)
 
 
 
+-------------------------------------------------------------------------------------------
+---------------------------------------- UPDATE -------------------------------------------
+-------------------------------------------------------------------------------------------
+
+
 
 local function TryUnbind(px, py)
     -- stand still
@@ -540,12 +612,12 @@ local function TryUnbind(px, py)
             UnbindAllKeybinds()
             -- disable camera movement on left click,
             -- results in not being able to move using left and right mouse buttons
-            if (METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
-                CameraOrSelectOrMoveStart = function()
-                    -- try to do something similar to left click
-                    --TurnOrActionStart() -- fail - protected function
-                end
-            end
+            --if (METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
+            --    CameraOrSelectOrMoveStart = function()
+            --        -- try to do something similar to left click
+            --        --TurnOrActionStart() -- fail - protected function
+            --    end
+            --end
 
             ShouldUnbind = false
         end
@@ -596,6 +668,40 @@ EventFrame:SetScript("OnUpdate", function()
     if (Unbound and (currentTime > ShackleCastTime + 6.5)) then
         MethWheelchair.Restore()
         Print("Movement \124cff00ff00restored\124r.")
+    end
+
+    if (VersionCheckTimeLimit and GetTime() > VersionCheckTimeLimit) then
+        local didnotrespond = {}
+        for i = 1, GetNumRaidMembers(), 1 do
+            local unit = "RAID"..i
+            local unitName = UnitName(unit)
+            local found = false
+            for sender, version in VersionCheckRepliers do
+                if (sender == unitName) then
+                    found = true
+                    break
+                end
+            end
+            if (not found) then
+                tinsert(didnotrespond, "\124cff"..GetClassColor(unit)..unitName.."\124r")
+            end
+        end
+
+        if (table.getn(didnotrespond) > 0) then
+            local message = "Did not respond to version check: "
+            for i = 1, table.getn(didnotrespond), 1 do
+                message = message..didnotrespond[i]
+                if (i ~= table.getn(didnotrespond)) then
+                    message = message..", "
+                end
+            end
+            Print(message..".")
+        else
+            Print("Everybody responded to version check.")
+        end
+
+        VersionCheckTimeLimit = nil
+        VersionCheckRepliers = {}
     end
 end)
 
@@ -776,9 +882,17 @@ local function CmdQuery(msg)
     local playerName = UnitName("PLAYER")
 
     if (args[2] == "version") then
+        VersionCheckTimeLimit = GetTime() + 5.0
         local message = "query;"..playerName..";version;"
         SendAddonMessage(ADDON_PREFIX, message, "RAID")
         Print("\124cff00ff00Initializing version check...\124r")
+    end
+
+    if (args[2] == "superwowversion") then
+        VersionCheckTimeLimit = GetTime() + 5.0
+        local message = "query;"..playerName..";superwowversion;"
+        SendAddonMessage(ADDON_PREFIX, message, "RAID")
+        Print("\124cff00ff00Initializing SuperWoW version check...\124r")
     end
 
     if (args[2] == "triggercount") then

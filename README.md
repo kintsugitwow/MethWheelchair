@@ -1,7 +1,7 @@
 # MethWheelchair
 
 Disables movement keybinds after standing still for at least one frame after Mephistroth finishes casting Shackles of the Legion.<br>
-After debuff is gone or after 6.5 seconds of cast event re-enables keybinds.<br>
+After debuff is gone or after 6.5 secs of cast event re-enables keybinds.<br>
 Hitting movement keybinds during that time will cancel spell casts.
 
 
@@ -18,5 +18,5 @@ Use ``/mw lmb`` to toggle blocking left mouse button (prevents moving on pressin
 
 - Holding Strafe Left and Strafe Right keys at same time causes player to stop moving because velocity in both direction adds up to 0, but when keybinds are restored and player presses one of strafe keybinds and releases it, the player character will start running in opposite direction until opposite direction keybind is pressed and released. *In short: Sometimes after Shackles you have to quickly tap left and right movement keys or your character will move funny.*
 
-- Protection agains moving by holding Left and Right Mouse Buttons simultaneously disables Left Mouse Button functinality in game world meaning that you can't target enemies by clicking on their models or rotate camera by holding Left Mouse Button, you can still target enemies by clicking their namepaltes or cast your spells by clicking them. Right Mouse Button still works during that time and should be used for these actions (targeting by clicking models, rotating camera). Full Left Mouse Button functionality is restored the same time as all movment keybinds are restored - when shackles ends.<br>As a side effect, movement action MOVEANDSTEER (by default bound to holding down Mouse Wheel) is permamently disabled after first movement block. It is not restored when shackle ends. To restore its functionality relog or use command ``/mw reload``.
+- Protection agains moving by holding Left and Right Mouse Buttons simultaneously disables Left Mouse Button functinality in game world meaning that you can't target enemies by clicking on their models or rotate camera by holding Left Mouse Button, you can still target enemies by clicking their namepaltes or cast your spells by clicking them. Right Mouse Button still works during that time and should be used for these actions (targeting by clicking models, rotating camera). Full Left Mouse Button functionality is restored the same time as all movment keybinds are restored - when shackles ends or after 6.5 secs.
 
