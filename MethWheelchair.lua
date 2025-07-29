@@ -3,14 +3,15 @@ mw = MethWheelchair
 
 BINDING_HEADER_METHWHEELCHAIR = "MethWheelchair"
 local ADDON_PREFIX = "METHWHEELCHAIR"
-local ADDON_VERSION = 1.02
+local ADDON_VERSION = 1.03
 
 local CONFIG_DEFAULT_VALUE = {
     LOGIN_INFO = true, -- display in chat window
     BLOCK_LMB = true, -- blocks moving my pressing both mouse buttons but disables Left Mouse Button clicks in world - only registered by UI - can't target enemies by clicking models, do it by clicking nameplates or tab target
+    MUTUAL_MOUSE_BLOCK = true,
     SUPER_WOW = true, -- use superwow functions, (as for now most important for position)
     UNIT_CASTEVENT = false, -- combat log should be better
-    INCLUDE_START_EVENT = false, -- just anoying, player should know when to stop moving, not block him 2 sec before
+    INCLUDE_START_EVENT = false, -- just annoying, player should know when to stop moving, not block him 2 sec before
     -- silent debug
     LISTEN = true,
     -- saved stats for debug
@@ -34,6 +35,7 @@ local SettingKeys = {
     ["totalmappositioncriticalfails"] = "TOTAL_MAP_POSITION_CRITICAL_FAILS",
 }
 
+local ShackleDuration = 6.0
 local ShouldUnbind = false
 local Unbound = false
 local PreviousPosition_X = 0
@@ -59,7 +61,6 @@ local MovementTypes = {
     "STRAFERIGHT",
     "MOVEANDSTEER",
     "TOGGLEAUTORUN",
-    "CAMERAORSELECTORMOVE", -- safer way to block left mouse button, BLOCK_LMB setting handled in unbind handler
 }
 
 local Keybinds = {}
@@ -68,14 +69,31 @@ for k, mt in MovementTypes do
     Keybinds[mt] = {}
 end
 
+
 -- hook
---local old_CameraOrSelectOrMoveStart = CameraOrSelectOrMoveStart
+local old_CameraOrSelectOrMoveStart = CameraOrSelectOrMoveStart
+
 
 local strfind = string.find
 local strlower = string.lower
 
+
 local VersionCheckTimeLimit = nil
 local VersionCheckRepliers = {}
+
+
+local MouseButtonDebug = false
+
+local LMB_ACTION = "CAMERAORSELECTORMOVE"
+local RMB_ACTION = "TURNORACTION"
+
+local LmbDown = false
+local RmbDown = false
+
+local LmbKeybind = nil
+local RmbKeybind = nil
+
+
 
 local function Print(msg, r, g, b, a)
     return DEFAULT_CHAT_FRAME:AddMessage("\124cffffffff[\124r\124cffa044b9MethWheelchair\124r\124cffffffff]:\124r "..tostring(msg), r, g, b, a)
@@ -157,6 +175,9 @@ local function SaveKeybinds(show)
         Keybinds[mt][2] = key2
     end
 
+    LmbKeybind = GetBindingKey(LMB_ACTION)
+    RmbKeybind = GetBindingKey(RMB_ACTION)
+
     if (show) then
         PrintKeybinds()
     end
@@ -216,18 +237,22 @@ end
 
 local function RestoreKeybinds()
     for mt, keybind in Keybinds do
-        --if (mt == "MOVEANDSTEER" and METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
-        --    -- do nothing, otherwise protected function error pops up
-        --    -- because blocking Left Mouse Button involves hooking and reassigning semi-protected function
-        --else
+
+        if (mt == "MOVEANDSTEER" and SUPERWOW_VERSION and METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
+            -- do nothing, otherwise protected function error pops up
+            -- because blocking Left Mouse Button involves hooking and reassigning semi-protected function
+        else
             if (keybind[1]) then
                 SetBinding(keybind[1], mt)
             end
             if (keybind[2]) then
                 SetBinding(keybind[2], mt)
             end
-        --end
+        end
     end
+
+    SetBinding(LmbKeybind, LMB_ACTION)
+    SetBinding(RmbKeybind, RMB_ACTION)
 
     Unbound = false
 end
@@ -252,7 +277,11 @@ end
 
 function MethWheelchair.Restore()
     ShouldUnbind = false
+    ShackleCastTime = 0
     RestoreKeybinds()
+    if (SUPERWOW_VERSION and METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
+        CameraOrSelectOrMoveStart = old_CameraOrSelectOrMoveStart
+    end
 end
 
 
@@ -350,6 +379,92 @@ function()
 end)
 
 
+local function HookMouseEvents()
+    local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
+    local WorldFrame_OnMouseUp = WorldFrame:GetScript("OnMouseUp")
+
+    WorldFrame:SetScript("OnMouseDown", function(a1, a2)
+        if (arg1 == "LeftButton") then
+            LmbDown = true
+            if (MouseButtonDebug) then
+                Print("LMB_DOWN")
+            end
+        elseif (arg1 == "RightButton") then
+            RmbDown = true
+            if (MouseButtonDebug) then
+                Print("RMB_DOWN")
+            end
+        end
+
+        if (WorldFrame_OnMouseDown) then
+            WorldFrame_OnMouseDown()
+        end
+    end)
+
+    WorldFrame:SetScript("OnMouseUp", function(a1, a2)
+        if (arg1 == "LeftButton") then
+            LmbDown = false
+            if (MouseButtonDebug) then
+                Print("LMB_UP")
+            end
+        elseif (arg1 == "RightButton") then
+            RmbDown = false
+            if (MouseButtonDebug) then
+                Print("RMB_UP")
+            end
+        end
+
+        if (WorldFrame_OnMouseUp) then
+            WorldFrame_OnMouseUp()
+        end
+    end)
+
+    -- can't cover most frames anyway, no reason to work on only some
+    --for k, frame in {UIParent:GetChildren()} do
+    --
+    --    local onMouseDown = frame:GetScript("OnMouseDown")
+    --    local onMouseUp = frame:GetScript("OnMouseUp")
+    --
+    --    frame:SetScript("OnMouseDown", function(a1, a2)
+    --        if (arg1 == "LeftButton") then
+    --            LmbDown = true
+    --            if (MouseButtonDebug) then
+    --                Print("LMB_DOWN")
+    --            end
+    --        elseif (arg1 == "RightButton") then
+    --            RmbDown = true
+    --            if (MouseButtonDebug) then
+    --                Print("RMB_DOWN")
+    --            end
+    --        end
+    --
+    --        if (onMouseDown) then
+    --            onMouseDown()
+    --        end
+    --    end)
+    --
+    --    frame:SetScript("OnMouseUp", function(a1, a2)
+    --        if (arg1 == "LeftButton") then
+    --            LmbDown = false
+    --            if (MouseButtonDebug) then
+    --                Print("LMB_UP")
+    --            end
+    --        elseif (arg1 == "RightButton") then
+    --            RmbDown = false
+    --            if (MouseButtonDebug) then
+    --                Print("RMB_UP")
+    --            end
+    --        end
+    --
+    --        if (onMouseUp) then
+    --            onMouseUp()
+    --        end
+    --    end)
+    --
+    --end
+end
+
+
 -- PLAYER_ENTERING_WORLD
 RegisterEvent("PLAYER_ENTERING_WORLD",
 function()
@@ -369,6 +484,8 @@ function()
             Print("Blocking Left Mouse Button is \124cffff0000disabled\124r.")
         end
     end
+
+    HookMouseEvents()
 end)
 
 
@@ -610,14 +727,15 @@ local function TryUnbind(px, py)
         if (ShouldUnbind) then
             Print("Movement \124cffff0000disabled\124r.")
             UnbindAllKeybinds()
+
             -- disable camera movement on left click,
             -- results in not being able to move using left and right mouse buttons
-            --if (METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
-            --    CameraOrSelectOrMoveStart = function()
-            --        -- try to do something similar to left click
-            --        --TurnOrActionStart() -- fail - protected function
-            --    end
-            --end
+            if (SUPERWOW_VERSION and METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
+                CameraOrSelectOrMoveStart = function()
+                    -- try to do something similar to left click
+                    --TurnOrActionStart() -- fail - protected function
+                end
+            end
 
             ShouldUnbind = false
         end
@@ -625,6 +743,50 @@ local function TryUnbind(px, py)
 
     PreviousPosition_X = px
     PreviousPosition_Y = py
+end
+
+
+local function TryUnbindMouse()
+    -- only one mouse button at a time
+    if (METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK and ShackleCastTime ~= 0) then
+        if (LmbDown == true) then
+            local rmbKeybind = GetBindingKey(RMB_ACTION)
+            if (RmbDown == false and rmbKeybind ~= nil) then
+                -- unbind RMB
+                SetBinding(RmbKeybind, nil)
+                if (MouseButtonDebug) then
+                    Print("RMB unbound")
+                end
+            end
+        elseif (RmbDown == true) then
+            local lmbKeybind = GetBindingKey(LMB_ACTION)
+            if (LmbDown == false and lmbKeybind ~= nil) then
+                -- unbind LMB
+                SetBinding(LmbKeybind, nil)
+                if (MouseButtonDebug) then
+                    Print("LMB unbound")
+                end
+            end
+        else
+            -- restore both
+            local rmbKeybind = GetBindingKey(RMB_ACTION)
+            if (not rmbKeybind) then
+                SetBinding(RmbKeybind, RMB_ACTION)
+                MouselookStop()
+                if (MouseButtonDebug) then
+                    Print("RMB restored")
+                end
+            end
+            local lmbKeybind = GetBindingKey(LMB_ACTION)
+            if (not lmbKeybind) then
+                SetBinding(LmbKeybind, LMB_ACTION)
+                MouselookStop()
+                if (MouseButtonDebug) then
+                    Print("LMB restored")
+                end
+            end
+        end
+    end
 end
 
 
@@ -665,10 +827,12 @@ EventFrame:SetScript("OnUpdate", function()
 
     local currentTime = GetTime()
     -- debuff lasts 6 sec, 0.5 sec for error
-    if (Unbound and (currentTime > ShackleCastTime + 6.5)) then
+    if (Unbound and (currentTime > (ShackleCastTime + ShackleDuration + 0.5))) then
         MethWheelchair.Restore()
         Print("Movement \124cff00ff00restored\124r.")
     end
+
+    TryUnbindMouse()
 
     if (VersionCheckTimeLimit and GetTime() > VersionCheckTimeLimit) then
         local didnotrespond = {}
@@ -688,7 +852,7 @@ EventFrame:SetScript("OnUpdate", function()
         end
 
         if (table.getn(didnotrespond) > 0) then
-            local message = "Did not respond to version check: "
+            local message = "Did not respond to version check ("..tostring(table.getn(didnotrespond)).."): "
             for i = 1, table.getn(didnotrespond), 1 do
                 message = message..didnotrespond[i]
                 if (i ~= table.getn(didnotrespond)) then
@@ -793,6 +957,32 @@ local function CmdLMB(msg)
 
     return true
 end
+
+
+local function CmdMMB(msg)
+    local cmd = { "mmb", "mutualmouseblock", "mutualmouseblocking", "mutualmousebutton" }
+    local args = MsgArgs(msg, 2)
+    if (not IsCmd(cmd, args[1])) then return false end
+
+    if (args[2] == "enable") then
+        METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = true
+        Print("Mutual Mouse Button blocking is now \124cff00ff00enabled\124r.")
+    elseif (args[2] == "disable") then
+        METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = false
+        Print("Mutual Mouse Button blocking is now \124cffff0000disabled\124r.")
+    else
+        if (METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK == true) then
+            METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = false
+            Print("Mutual Mouse Button blocking is now \124cffff0000disabled\124r.")
+        else
+            METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = true
+            Print("Mutual Mouse Button blocking is now \124cff00ff00enabled\124r.")
+        end
+    end
+
+    return true
+end
+
 
 local function CmdTrigger(msg)
     local cmd = { "trigger" }
@@ -1021,6 +1211,7 @@ SlashCmdList["METHWHEELCHAIR"] = function(msg)
     if (CmdKeybinds(msg)) then return end
     if (CmdLoginInfo(msg)) then return end
     if (CmdLMB(msg)) then return end
+    if (CmdMMB(msg)) then return end
     if (CmdTrigger(msg)) then return end
     if (CmdSuperWoW(msg)) then return end
     if (CmdUnitCastevent(msg)) then return end
