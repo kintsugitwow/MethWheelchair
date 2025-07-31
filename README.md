@@ -23,3 +23,14 @@ Use ``/mw mmb`` to toggle mutual blocking of both mouse buttons (prevents moving
 
 - During Shackle there is only one mouse button pressed at a time allowed. This will fail if both mouse buttons trigger MouseDown event during same frame. This shouldn't be an issue for SuperWoW users, due to solution in section above, but will result in Shackle Shatter in case of non-SuperWoW user.
 
+- Another way to Shatter Shackle:
+    1. Press Right Mouse Button
+    2. Press Left Mouse Button
+    3. Get Shackle debuff
+    4. Press S
+    5. Stop moving - trigger unbind
+    6. Release both mouse buttons 
+    7. Start walking backwards 
+    8. Release S
+    9. Continue walking backwards
+    *Replace S with A or D to spin instead of walking backwards (not shattering shackle)*
