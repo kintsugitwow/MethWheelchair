@@ -583,7 +583,10 @@ local function RestoreKeybinds()
         ) then
             -- do nothing, otherwise protected function error pops up
             -- because blocking Left Mouse Button involves hooking and reassigning semi-protected function
-        elseif (mt == "TOGGLEAUTORUN" and METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE) then
+        elseif (mt == "TOGGLEAUTORUN"
+            and (METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE
+            and IsNoAutorunSubZone(GetSubZoneText()))
+        ) then
             -- also do nothing
             -- if disabled by subzone
         else
