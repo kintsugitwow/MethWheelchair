@@ -27,7 +27,7 @@
     <!-- MAIN FRAME -->
     <Frame name="MethWheelchairMainFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true" frameStrata="HIGH">
         <Size>
-            <AbsDimension x="512" y="288"/>
+            <AbsDimension x="512" y="292"/>
         </Size>
 
         <Anchors>
@@ -39,7 +39,7 @@
                 <!-- OUTER BACKGROUND -->
                 <Texture name="$parentBackgroundPurple">
                     <Size>
-                        <AbsDimension x="516" y="292"/>
+                        <AbsDimension x="516" y="296"/>
                     </Size>
                     <Anchors>
                         <Anchor point="CENTER"/>
@@ -52,7 +52,7 @@
                 <!-- INNER BACKGROUND -->
                 <Texture name="$parentBackground">
                     <Size>
-                        <AbsDimension x="512" y="288"/>
+                        <AbsDimension x="512" y="292"/>
                     </Size>
                     <Anchors>
                         <Anchor point="CENTER"/>
@@ -187,7 +187,7 @@
                 <Anchors>
                     <Anchor point="TOPLEFT">
                         <Offset>
-                            <AbsDimension x="32" y="-64"/>
+                            <AbsDimension x="32" y="-56"/>
                         </Offset>
                     </Anchor>
                 </Anchors>
@@ -218,7 +218,7 @@
                 <Anchors>
                     <Anchor point="TOP" relativeTo="MethWheelchair_Option_ShowLoginInfo" relativePoint="TOP">
                         <Offset>
-                            <AbsDimension x="0" y="-32"/>
+                            <AbsDimension x="0" y="-30"/>
                         </Offset>
                     </Anchor>
                 </Anchors>
@@ -249,7 +249,7 @@
                 <Anchors>
                     <Anchor point="TOP" relativeTo="MethWheelchair_Option_EnableFullScreenEffect" relativePoint="TOP">
                         <Offset>
-                            <AbsDimension x="0" y="-32"/>
+                            <AbsDimension x="0" y="-30"/>
                         </Offset>
                     </Anchor>
                 </Anchors>
@@ -343,7 +343,7 @@
                 <Anchors>
                     <Anchor point="TOP" relativeTo="MethWheelchair_Option_BlockLeftMouseButton" relativePoint="TOP">
                         <Offset>
-                            <AbsDimension x="0" y="-32"/>
+                            <AbsDimension x="0" y="-30"/>
                         </Offset>
                     </Anchor>
                 </Anchors>
@@ -366,6 +366,39 @@
             </CheckButton>
 
 
+            <!-- MUTUAL MOUSE BUTTON BLOCKING -->
+            <CheckButton name="MethWheelchair_Option_DisableJumpBySubZone" inherits="OptionsCheckButtonTemplate">
+                <Size>
+                    <AbsDimension x="26" y="26"/>
+                </Size>
+
+                <Anchors>
+                    <Anchor point="TOP" relativeTo="MethWheelchair_Option_AllowOnlyOneMouseButtonAtATime" relativePoint="TOP">
+                        <Offset>
+                            <AbsDimension x="0" y="-30"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnLoad>
+                        local text = getglobal(this:GetName().."Text")
+                        text:SetText("Disable jump on Meth platform")
+                        text:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+                        text:SetTextColor(0.92, 0.92, 1.0, 1.0)
+                        this:SetHitRectInsets(0, 0, 0, 0)
+                    </OnLoad>
+                    <OnClick>
+                        if (this:GetChecked() == 1) then
+                            METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE = true
+                        else
+                            METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE = false
+                        end
+                        MethWheelchair.UpdateJumpKeybind()
+                    </OnClick>
+                </Scripts>
+            </CheckButton>
+
+
             <!-- TEST BUTTON -->
             <Button name="$parentTestButton">
                 <Size>
@@ -374,7 +407,7 @@
                 <Anchors>
                     <Anchor point="BOTTOM">
                         <Offset>
-                            <AbsDimension x="0" y="16"/>
+                            <AbsDimension x="0" y="12"/>
                         </Offset>
                     </Anchor>
                 </Anchors>

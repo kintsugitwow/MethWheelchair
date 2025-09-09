@@ -19,6 +19,8 @@ local CONFIG_DEFAULT_VALUE = {
 
     MUTUAL_MOUSE_BLOCK = true,
 
+    DISABLE_JUMP_BY_SUBZONE = false,
+
     -- use SuperWoW functions
     SUPERWOW = true,
 
@@ -102,13 +104,19 @@ local ShackleTextureTriggers = {
     "INV_Belt_18",
 }
 
+local NoJumpSubZones = {
+    "Hand of Mephistroth",
+}
+
 if (DEBUG_MODE) then
     -- names
     tinsert(ShackleSpellNameTriggers, "Weakened Soul")
     -- ids
     tinsert(ShackleSpellIDTriggers, 2060) -- Greater Heal (Rank 1)
-    -- texture
+    -- textures
     tinsert(ShackleTextureTriggers, "AshesToAshes") -- Weakened Soul
+    -- subzones
+    tinsert(NoJumpSubZones, "The Park") -- SW park
 end
 
 
@@ -129,6 +137,9 @@ local Keybinds = {}
 for k, mt in MovementTypes do
     Keybinds[mt] = {}
 end
+
+local JUMP_ACTION = "JUMP"
+local JumpKeybinds = {}
 
 
 -- mouse 
@@ -251,6 +262,17 @@ local function IsShackleDebuffTexture(texture)
 end
 
 
+local function IsNoJumpSubZone(subZoneName)
+    for _, szn in NoJumpSubZones do
+        if (szn == subZoneName) then
+            return true
+        end
+    end
+
+    return false
+end
+
+
 local function InitSetting(setting)
     if (METHWHEELCHAIR_CONFIG[setting] == nil) then
         if (CONFIG_DEFAULT_VALUE[setting] == nil) then
@@ -275,6 +297,8 @@ local function InitUIConfig()
     MethWheelchair_Option_BlockLeftMouseButton:SetChecked(METHWHEELCHAIR_CONFIG.BLOCK_LMB)
 
     MethWheelchair_Option_AllowOnlyOneMouseButtonAtATime:SetChecked(METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK)
+
+    MethWheelchair_Option_DisableJumpBySubZone:SetChecked(METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE)
 end
 
 
@@ -426,6 +450,10 @@ local function SaveKeybinds(show)
         Keybinds[mt][2] = key2
     end
 
+    local jump1, jump2 = GetBindingKey(JUMP_ACTION)
+    JumpKeybinds[1] = jump1
+    JumpKeybinds[2] = jump2
+
     LmbKeybind = GetBindingKey(LMB_ACTION)
     RmbKeybind = GetBindingKey(RMB_ACTION)
 
@@ -508,6 +536,28 @@ local function RestoreKeybinds()
     Unbound = false
 end
 
+
+local function UpdateJumpKeybind(forceSubZone)
+    if (METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE
+        and (IsNoJumpSubZone(GetSubZoneText()) or forceSubZone)
+    ) then
+        for _, keybind in JumpKeybinds do
+            if (keybind) then
+                SetBinding(keybind, nil)
+            end
+        end
+    else
+        local jump1, jump2 = GetBindingKey(JUMP_ACTION)
+        if ((not jump1) and (not jump2)) then
+            for _, keybind in JumpKeybinds do
+                if (keybind) then
+                    SetBinding(keybind, JUMP_ACTION)
+                end
+            end
+        end
+    end
+end
+MethWheelchair.UpdateJumpKeybind = UpdateJumpKeybind
 
 
 function MethWheelchair.Unbind(castDuration)
@@ -718,26 +768,41 @@ end
 
 
 -- PLAYER_ENTERING_WORLD
+local PlayerEnteredWorld = false
 RegisterEvent("PLAYER_ENTERING_WORLD",
 function()
-    UnregisterEvent("PLAYER_ENTERING_WORLD")
-    local loginInfo = METHWHEELCHAIR_CONFIG.LOGIN_INFO
+    if (PlayerEnteredWorld == false) then
+        PlayerEnteredWorld = true
 
-    if (loginInfo) then
-        PrintVersion()
-    end
+        local loginInfo = METHWHEELCHAIR_CONFIG.LOGIN_INFO
 
-    SaveKeybinds(loginInfo)
-
-    if (loginInfo) then
-        if (METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
-            Print("Blocking Left Mouse Button is \124cff00ff00enabled\124r.")
-        else
-            Print("Blocking Left Mouse Button is \124cffff0000disabled\124r.")
+        if (loginInfo) then
+            PrintVersion()
         end
+
+        SaveKeybinds(loginInfo)
+
+        if (loginInfo) then
+            if (METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
+                Print("Blocking Left Mouse Button is \124cff00ff00enabled\124r.")
+            else
+                Print("Blocking Left Mouse Button is \124cffff0000disabled\124r.")
+            end
+        end
+
+        HookMouseEvents()
     end
 
-    HookMouseEvents()
+    UpdateJumpKeybind()
+end)
+
+
+
+
+
+RegisterEvent("MINIMAP_ZONE_CHANGED",
+function()
+    UpdateJumpKeybind()
 end)
 
 
@@ -1561,6 +1626,34 @@ local function CmdFullScreenEffect(msg)
     return true
 end
 
+local function CmdJump(msg)
+    local cmd = { "j", "jump" }
+    local args = MsgArgs(msg, 2)
+    if (not IsCmd(cmd, args[1])) then return false end
+
+    if (args[2] == "enable") then
+        METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE = true
+        MethWheelchair_Option_DisableJumpBySubZone:SetChecked(true)
+        Print("Blocking jump on Meth platform is now \124cff00ff00enabled\124r.")
+    elseif (args[2] == "disable") then
+        METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE = false
+        MethWheelchair_Option_DisableJumpBySubZone:SetChecked(false)
+        Print("Blocking jump on Meth platform is now \124cffff0000disabled\124r.")
+    elseif (METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE == true) then
+        METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE = false
+        MethWheelchair_Option_DisableJumpBySubZone:SetChecked(false)
+        Print("Blocking jump on Meth platform is now \124cffff0000disabled\124r.")
+    else
+        METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE = true
+        MethWheelchair_Option_DisableJumpBySubZone:SetChecked(true)
+        Print("Blocking jump on Meth platform is now \124cff00ff00enabled\124r.")
+    end
+
+    UpdateJumpKeybind()
+
+    return true
+end
+
 local function CmdSuperWoW(msg)
     local cmd = { "superwow" }
     local args = MsgArgs(msg, 2)
@@ -1793,7 +1886,6 @@ local function CmdHelp(msg)
     Print("Use '/mw unbind' or '/mw test' to test how preventing movement works.")
     Print("Use '/mw keybinds' to display list of saved keybinds.")
     Print("Use '/mw logininfo' to toggle display of saved keybinds on login.")
-    Print("Use '/mw lmb' to toggle blocking left mouse button.")
     Print("Use '/mw fulltest' to conduct more complex test.")
 
     return true
@@ -1815,13 +1907,14 @@ SlashCmdList["METHWHEELCHAIR"] = function(msg)
     if (CmdMMB(msg)) then return end
     if (CmdEarlyUnbind(msg)) then return end
     if (CmdFullScreenEffect(msg)) then return end
-    if (CmdSuperWoW(msg)) then return end
-    --if (CmdTrigger(msg)) then return end
-    --if (CmdUnitCastevent(msg)) then return end
+    if (CmdJump(msg)) then return end
+
     if (CmdQuery(msg)) then return end
     if (CmdListen(msg)) then return end
     if (CmdResetTrackers(msg)) then return end
     if (CmdResetTrackersTotal(msg)) then return end
+    
+    if (CmdSuperWoW(msg)) then return end
     if (CmdReload(msg)) then return end
     if (CmdFullTest(msg)) then return end
 
