@@ -4,7 +4,7 @@ BINDING_HEADER_METHWHEELCHAIR = "MethWheelchair"
 local ADDON_PREFIX = "METHWHEELCHAIR"
 
 
-local DEBUG_MODE = true
+local DEBUG_MODE = false
 MethWheelchair.DebugMode = DEBUG_MODE
 
 
@@ -19,7 +19,9 @@ local CONFIG_DEFAULT_VALUE = {
 
     MUTUAL_MOUSE_BLOCK = true,
 
-    DISABLE_JUMP_BY_SUBZONE = false,
+    UNBIND_AUTORUN_BY_SUBZONE = true,
+
+    UNBIND_JUMP_BY_SUBZONE = false,
 
     -- use SuperWoW functions
     SUPERWOW = true,
@@ -60,11 +62,17 @@ local SettingKeys = {
     ["mutual_mouse_block"] = "MUTUAL_MOUSE_BLOCK",
     ["mutual_mouse_button_block"] = "MUTUAL_MOUSE_BLOCK",
 
-    ["jump"] = "DISABLE_JUMP_BY_SUBZONE",
-    ["disablejump"] = "DISABLE_JUMP_BY_SUBZONE",
-    ["disable_jump"] = "DISABLE_JUMP_BY_SUBZONE",
-    ["disablejumpbysubzone"] = "DISABLE_JUMP_BY_SUBZONE",
-    ["disable_jump_by_subzone"] = "DISABLE_JUMP_BY_SUBZONE",
+    ["autorun"] = "UNBIND_AUTORUN_BY_SUBZONE",
+    ["unbindautorun"] = "UNBIND_AUTORUN_BY_SUBZONE",
+    ["unbind_autorun"] = "UNBIND_AUTORUN_BY_SUBZONE",
+    ["disableautorunbysubzone"] = "UNBIND_AUTORUN_BY_SUBZONE",
+    ["unbind_autorun_by_subzone"] = "UNBIND_AUTORUN_BY_SUBZONE",
+
+    ["jump"] = "UNBIND_JUMP_BY_SUBZONE",
+    ["unbindjump"] = "UNBIND_JUMP_BY_SUBZONE",
+    ["unbind_jump"] = "UNBIND_JUMP_BY_SUBZONE",
+    ["disablejumpbysubzone"] = "UNBIND_JUMP_BY_SUBZONE",
+    ["unbind_jump_by_subzone"] = "UNBIND_JUMP_BY_SUBZONE",
 
     ["superwow"] = "SUPERWOW",
 
@@ -110,6 +118,12 @@ local ShackleTextureTriggers = {
     "INV_Belt_18",
 }
 
+-- on MINIMAP_ZONE_CHANGED
+local NoAutorunSubZones = {
+    "Hand of Mephistroth",
+}
+
+-- on MINIMAP_ZONE_CHANGED
 local NoJumpSubZones = {
     "Hand of Mephistroth",
 }
@@ -121,7 +135,9 @@ if (DEBUG_MODE) then
     tinsert(ShackleSpellIDTriggers, 2060) -- Greater Heal (Rank 1)
     -- textures
     tinsert(ShackleTextureTriggers, "AshesToAshes") -- Weakened Soul
-    -- subzones
+    -- no autorun subzones
+    tinsert(NoAutorunSubZones, "The Park") -- SW park
+    -- no jump subzones
     tinsert(NoJumpSubZones, "The Park") -- SW park
 end
 
@@ -146,6 +162,9 @@ end
 
 local JUMP_ACTION = "JUMP"
 local JumpKeybinds = {}
+
+local AUTORUN_ACTION = "TOGGLEAUTORUN"
+local AutorunKeybinds = {}
 
 
 -- mouse 
@@ -268,6 +287,17 @@ local function IsShackleDebuffTexture(texture)
 end
 
 
+local function IsNoAutorunSubZone(subZoneName)
+    for _, szn in NoAutorunSubZones do
+        if (szn == subZoneName) then
+            return true
+        end
+    end
+
+    return false
+end
+
+
 local function IsNoJumpSubZone(subZoneName)
     for _, szn in NoJumpSubZones do
         if (szn == subZoneName) then
@@ -293,18 +323,20 @@ end
 
 
 local function InitUIConfig()
-    MethWheelchair_Option_ShowLoginInfo:SetChecked(METHWHEELCHAIR_CONFIG.LOGIN_INFO)
+    MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(METHWHEELCHAIR_CONFIG.LOGIN_INFO)
 
-    MethWheelchair_Option_EnableFullScreenEffect:SetChecked(METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT)
+    MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT)
 
-    MethWheelchair_Option_UnbindBeforeShackle:SetChecked(METHWHEELCHAIR_CONFIG.EARLY_UNBIND)
-    MethWheelchair_Option_UnbindBeforeShackle_Slider:SetValue(METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE)
+    MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE)
+
+    MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE)
+
+    MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(METHWHEELCHAIR_CONFIG.EARLY_UNBIND)
+    MethWheelchair_MainFrame_Options_UnbindBeforeShackle_Slider:SetValue(METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE)
     
-    MethWheelchair_Option_BlockLeftMouseButton:SetChecked(METHWHEELCHAIR_CONFIG.BLOCK_LMB)
+    MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(METHWHEELCHAIR_CONFIG.BLOCK_LMB)
 
-    MethWheelchair_Option_AllowOnlyOneMouseButtonAtATime:SetChecked(METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK)
-
-    MethWheelchair_Option_DisableJumpBySubZone:SetChecked(METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE)
+    MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK) 
 end
 
 
@@ -409,6 +441,25 @@ local function InitFullScreenEffect()
 end
 
 
+function MethWheelchair.ShowUI()
+    MethWheelchair_MainFrame:Show()
+end
+
+
+function MethWheelchair.HideUI()
+    MethWheelchair_MainFrame:Hide()
+end
+
+
+function MethWheelchair.ToggleUI()
+    if (MethWheelchair_MainFrame:IsShown()) then
+        MethWheelchair_MainFrame:Hide()
+    else
+        MethWheelchair_MainFrame:Show()
+    end
+end
+
+
 local function PrintVersion()
     Print("Version: "..tostring(GetAddonVersion()))
 end
@@ -455,6 +506,10 @@ local function SaveKeybinds(show)
         Keybinds[mt][1] = key1
         Keybinds[mt][2] = key2
     end
+
+    local autorun1, autorun2 = GetBindingKey(AUTORUN_ACTION)
+    AutorunKeybinds[1] = autorun1
+    AutorunKeybinds[2] = autorun2
 
     local jump1, jump2 = GetBindingKey(JUMP_ACTION)
     JumpKeybinds[1] = jump1
@@ -523,7 +578,9 @@ end
 local function RestoreKeybinds()
     for mt, keybind in Keybinds do
 
-        if (mt == "MOVEANDSTEER" and SUPERWOW_VERSION and METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
+        if (mt == "MOVEANDSTEER" and METHWHEELCHAIR_CONFIG.BLOCK_LMB
+            and SUPERWOW_VERSION and METHWHEELCHAIR_CONFIG.SUPERWOW
+        ) then
             -- do nothing, otherwise protected function error pops up
             -- because blocking Left Mouse Button involves hooking and reassigning semi-protected function
         else
@@ -543,15 +600,40 @@ local function RestoreKeybinds()
 end
 
 
+local function UpdateAutorunKeybind(forceSubZone)
+    if (METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE
+        and (IsNoAutorunSubZone(GetSubZoneText()) or forceSubZone)
+    ) then
+        local replacementActionId = 1
+        
+        for _, keybind in AutorunKeybinds do
+            if (keybind) then
+                SetBinding(keybind, "METHWHEELCHAIR_REPLACEMENT_ACTION_AUTORUN"..tostring(replacementActionId))
+                replacementActionId = replacementActionId + 1
+            end
+        end
+    else
+        local autorun1, autorun2 = GetBindingKey(AUTORUN_ACTION)
+        if ((not autorun1) and (not autorun2)) then
+            for _, keybind in AutorunKeybinds do
+                if (keybind) then
+                    SetBinding(keybind, AUTORUN_ACTION)
+                end
+            end
+        end
+    end
+end
+MethWheelchair.UpdateAutorunKeybind = UpdateAutorunKeybind
+
+
 local function UpdateJumpKeybind(forceSubZone)
-    if (METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE
+    if (METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE
         and (IsNoJumpSubZone(GetSubZoneText()) or forceSubZone)
     ) then
         local replacementActionId = 1
         
         for _, keybind in JumpKeybinds do
             if (keybind) then
-                --SetBinding(keybind, nil)
                 SetBinding(keybind, "METHWHEELCHAIR_REPLACEMENT_ACTION_JUMP"..tostring(replacementActionId))
                 replacementActionId = replacementActionId + 1
             end
@@ -662,7 +744,6 @@ end
 EventFrame:SetScript("OnEvent", function()
     EventHandlers[event]()
 end)
-
 
 
 
@@ -803,15 +884,15 @@ function()
         HookMouseEvents()
     end
 
+    UpdateAutorunKeybind()
     UpdateJumpKeybind()
 end)
 
 
-
-
-
+-- MINIMAP_ZONE_CHANGED
 RegisterEvent("MINIMAP_ZONE_CHANGED",
 function()
+    UpdateAutorunKeybind()
     UpdateJumpKeybind()
 end)
 
@@ -1500,19 +1581,19 @@ local function CmdLoginInfo(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.LOGIN_INFO = true
-        MethWheelchair_Option_ShowLoginInfo:SetChecked(true)
+        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(true)
         Print("Login info \124cff00ff00enabled\124r.")
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.LOGIN_INFO = false
-        MethWheelchair_Option_ShowLoginInfo:SetChecked(false)
+        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(false)
         Print("Login info \124cffff0000disabled\124r.")
     elseif (METHWHEELCHAIR_CONFIG.LOGIN_INFO == true) then
         METHWHEELCHAIR_CONFIG.LOGIN_INFO = false
-        MethWheelchair_Option_ShowLoginInfo:SetChecked(false)
+        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(false)
         Print("Login info \124cffff0000disabled\124r.")
     else
         METHWHEELCHAIR_CONFIG.LOGIN_INFO = true
-        MethWheelchair_Option_ShowLoginInfo:SetChecked(true)
+        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(true)
         Print("Login info \124cff00ff00enabled\124r.")
     end
 
@@ -1526,20 +1607,20 @@ local function CmdLMB(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.BLOCK_LMB = true
-        MethWheelchair_Option_BlockLeftMouseButton:SetChecked(true)
+        MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(true)
         Print("Blocking Left Mouse button is now \124cff00ff00enabled\124r.")
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.BLOCK_LMB = false
-        MethWheelchair_Option_BlockLeftMouseButton:SetChecked(false)
+        MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(false)
         Print("Blocking Left Mouse button is now \124cffff0000disabled\124r.")
     else
         if (METHWHEELCHAIR_CONFIG.BLOCK_LMB == true) then
             METHWHEELCHAIR_CONFIG.BLOCK_LMB = false
-            MethWheelchair_Option_BlockLeftMouseButton:SetChecked(false)
+            MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(false)
             Print("Blocking Left Mouse button is now \124cffff0000disabled\124r.")
         else
             METHWHEELCHAIR_CONFIG.BLOCK_LMB = true
-            MethWheelchair_Option_BlockLeftMouseButton:SetChecked(true)
+            MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(true)
             Print("Blocking Left Mouse button is now \124cff00ff00enabled\124r.")
         end
     end
@@ -1554,20 +1635,20 @@ local function CmdMMB(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = true
-        MethWheelchair_Option_AllowOnlyOneMouseButtonAtATime:SetChecked(true)
+        MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(true)
         Print("Mutual Mouse Button blocking is now \124cff00ff00enabled\124r.")
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = false
-        MethWheelchair_Option_AllowOnlyOneMouseButtonAtATime:SetChecked(false)
+        MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(false)
         Print("Mutual Mouse Button blocking is now \124cffff0000disabled\124r.")
     else
         if (METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK == true) then
             METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = false
-            MethWheelchair_Option_AllowOnlyOneMouseButtonAtATime:SetChecked(false)
+            MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(false)
             Print("Mutual Mouse Button blocking is now \124cffff0000disabled\124r.")
         else
             METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = true
-            MethWheelchair_Option_AllowOnlyOneMouseButtonAtATime:SetChecked(true)
+            MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(true)
             Print("Mutual Mouse Button blocking is now \124cff00ff00enabled\124r.")
         end
     end
@@ -1582,28 +1663,28 @@ local function CmdEarlyUnbind(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.EARLY_UNBIND = true
-        MethWheelchair_Option_UnbindBeforeShackle:SetChecked(true)
+        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(true)
         Print("Early Unbind is now \124cff00ff00enabled\124r.")
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.EARLY_UNBIND = false
-        MethWheelchair_Option_UnbindBeforeShackle:SetChecked(false)
+        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(false)
         Print("Early Unbind is now \124cffff0000disabled\124r.")
     elseif (tonumber(args[2])) then
         local value = tonumber(args[2])
         METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE = value
         Print("Early Unbind value is now set to \124cffffff00"..string.format("%.2f", value).."\124r.")
-        MethWheelchair_Option_UnbindBeforeShackle_Slider:SetValue(value * 1000)
+        MethWheelchair_MainFrame_Options_UnbindBeforeShackle_Slider:SetValue(value * 1000)
 
     -- toggle
     elseif (METHWHEELCHAIR_CONFIG.EARLY_UNBIND == true) then
         -- disable
         METHWHEELCHAIR_CONFIG.EARLY_UNBIND = false
-        MethWheelchair_Option_UnbindBeforeShackle:SetChecked(false)
+        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(false)
         Print("Early Unbind is now \124cffff0000disabled\124r.")
     else
         -- enable
         METHWHEELCHAIR_CONFIG.EARLY_UNBIND = true
-        MethWheelchair_Option_UnbindBeforeShackle:SetChecked(true)
+        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(true)
         Print("Early Unbind is now \124cff00ff00enabled\124r.")
     end
 
@@ -1617,23 +1698,49 @@ local function CmdFullScreenEffect(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = true
-        MethWheelchair_Option_EnableFullScreenEffect:SetChecked(true)
+        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(true)
         Print("Full-Screen Effect is now \124cff00ff00enabled\124r.")
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = false
-        MethWheelchair_Option_EnableFullScreenEffect:SetChecked(false)
+        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(false)
         Print("Full-Screen Effect is now \124cffff0000disabled\124r.")
     elseif (METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT == true) then
         METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = false
-        MethWheelchair_Option_EnableFullScreenEffect:SetChecked(false)
+        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(false)
         Print("Full-Screen Effect is now \124cffff0000disabled\124r.")
     else
         METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = true
-        MethWheelchair_Option_EnableFullScreenEffect:SetChecked(true)
+        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(true)
         Print("Full-Screen Effect is now \124cff00ff00enabled\124r.")
     end
 
     return true
+end
+
+local function CmdAutorun(msg)
+    local cmd = { "ar", "autorun" }
+    local args = MsgArgs(msg, 2)
+    if (not IsCmd(cmd, args[1])) then return false end
+
+    if (args[2] == "enable") then
+        METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = true
+        MethWheelchair_MainFrame_Options_DisableAutorunBySubZone:SetChecked(true)
+        Print("Unbinding autorun on Meth platform is now \124cff00ff00enabled\124r.")
+    elseif (args[2] == "disable") then
+        METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = false
+        MMethWheelchair_MainFrame_Options_DisableAutorunBySubZone:SetChecked(false)
+        Print("Unbinding autorun on Meth platform is now \124cffff0000disabled\124r.")
+    elseif (METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE == true) then
+        METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = false
+        MethWheelchair_MainFrame_Options_DisableAutorunBySubZone:SetChecked(false)
+        Print("Unbinding autorun on Meth platform is now \124cffff0000disabled\124r.")
+    else
+        METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = true
+        MethWheelchair_MainFrame_Options_DisableAutorunBySubZone:SetChecked(true)
+        Print("Unbinding autorun on Meth platform is now \124cff00ff00enabled\124r.")
+    end
+
+    UpdateAutorunKeybind()
 end
 
 local function CmdJump(msg)
@@ -1642,21 +1749,21 @@ local function CmdJump(msg)
     if (not IsCmd(cmd, args[1])) then return false end
 
     if (args[2] == "enable") then
-        METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE = true
-        MethWheelchair_Option_DisableJumpBySubZone:SetChecked(true)
-        Print("Blocking jump on Meth platform is now \124cff00ff00enabled\124r.")
+        METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = true
+        MethWheelchair_MainFrame_Options_DisableJumpBySubZone:SetChecked(true)
+        Print("Unbinding jump on Meth platform is now \124cff00ff00enabled\124r.")
     elseif (args[2] == "disable") then
-        METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE = false
-        MethWheelchair_Option_DisableJumpBySubZone:SetChecked(false)
-        Print("Blocking jump on Meth platform is now \124cffff0000disabled\124r.")
-    elseif (METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE == true) then
-        METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE = false
-        MethWheelchair_Option_DisableJumpBySubZone:SetChecked(false)
-        Print("Blocking jump on Meth platform is now \124cffff0000disabled\124r.")
+        METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = false
+        MethWheelchair_MainFrame_Options_DisableJumpBySubZone:SetChecked(false)
+        Print("Unbinding jump on Meth platform is now \124cffff0000disabled\124r.")
+    elseif (METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE == true) then
+        METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = false
+        MethWheelchair_MainFrame_Options_DisableJumpBySubZone:SetChecked(false)
+        Print("Unbinding jump on Meth platform is now \124cffff0000disabled\124r.")
     else
-        METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE = true
-        MethWheelchair_Option_DisableJumpBySubZone:SetChecked(true)
-        Print("Blocking jump on Meth platform is now \124cff00ff00enabled\124r.")
+        METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = true
+        MethWheelchair_MainFrame_Options_DisableJumpBySubZone:SetChecked(true)
+        Print("Unbinding jump on Meth platform is now \124cff00ff00enabled\124r.")
     end
 
     UpdateJumpKeybind()
@@ -1857,7 +1964,8 @@ local function CmdShowUI(msg)
     local args = MsgArgs(msg, 1)
     if (not IsCmd(cmd, args[1])) then return false end
 
-    MethWheelchairMainFrame:Show()
+    MethWheelchair.ShowUI()
+
     return true
 end
 
@@ -1866,7 +1974,8 @@ local function CmdHideUI(msg)
     local args = MsgArgs(msg, 1)
     if (not IsCmd(cmd, args[1])) then return false end
 
-    MethWheelchairMainFrame:Hide()
+    MethWheelchair.HideUI()
+
     return true
 end
 
@@ -1874,11 +1983,7 @@ local function ToggleUI(msg)
     local args = MsgArgs(msg, 1)
     if (args[1] == "") then
 
-        if (not MethWheelchairMainFrame:IsShown()) then
-            MethWheelchairMainFrame:Show()
-        else
-            MethWheelchairMainFrame:Hide()
-        end
+        MethWheelchair.ToggleUI()
 
         return true
     end
@@ -1917,6 +2022,7 @@ SlashCmdList["METHWHEELCHAIR"] = function(msg)
     if (CmdMMB(msg)) then return end
     if (CmdEarlyUnbind(msg)) then return end
     if (CmdFullScreenEffect(msg)) then return end
+    if (CmdAutorun(msg)) then return end
     if (CmdJump(msg)) then return end
 
     if (CmdQuery(msg)) then return end
@@ -1978,7 +2084,7 @@ TestEventFrame:SetScript("OnUpdate", function()
         if (now > TestEventFrame.TestEndTime) then
             TestInProgress = false
             TestEventFrame.TestEndTime = nil
-            MethWheelchairMainFrame:Show()
+            MethWheelchair.ShowUI()
         end
     end
 end)
@@ -2002,7 +2108,7 @@ function MethWheelchair.FullTest()
     TestEventFrame.TestStartTime = GetTime()
     TestEventFrame.TestEndTime = GetTime() + ShackleCastDuration + ShackleDuration + 0.5
     
-    MethWheelchairMainFrame:Hide()
+    MethWheelchair.HideUI()
 
     if (METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT) then
         FullScreenEffect:Begin(TestEventFrame.TestEndTime)

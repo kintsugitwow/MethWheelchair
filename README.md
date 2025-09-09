@@ -12,7 +12,8 @@ Use ``/mw keybinds`` to display list of saved keybinds.<br>
 Use ``/mw logininfo`` to toggle display of saved keybinds on login.<br>
 Use ``/mw lmb`` to toggle blocking left mouse button (prevents moving on pressing left and right mouse buttons simultaneously). *More info in Known issues section.*<br>
 Use ``/mw mmb`` to toggle mutual blocking of both mouse buttons (prevents moving on pressing left and right mouse buttons simultaneously). *More info in Known issues section.*<br>
-Use ``/mw jump`` to toggle completely blocking jump while on Meth platform.<br>
+Use ``/mw autorun`` to toggle unbinding auto run while on Meth platform. Enabled by default.<br>
+Use ``/mw jump`` to toggle unbinding jump while on Meth platform. Disabled by default.<br>
 
 
 ## Known issues:

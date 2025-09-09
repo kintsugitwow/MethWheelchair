@@ -2,7 +2,7 @@
 ## Title: MethWheelchair
 ## Notes: Disables movement keybinds after standing still for at least one frame after Shackles of the Legion cast has started. After debuff is gone re-enables keybinds. 
 ## Author: Kintsugi <Moments>
-## Version: 1.05
+## Version: 1.06
 ## SavedVariables: METHWHEELCHAIR_CONFIG
 
 MethWheelchair.lua

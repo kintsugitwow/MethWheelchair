@@ -25,7 +25,7 @@
 
 
     <!-- MAIN FRAME -->
-    <Frame name="MethWheelchairMainFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true" frameStrata="HIGH">
+    <Frame name="MethWheelchair_MainFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true" frameStrata="HIGH">
         <Size>
             <AbsDimension x="512" y="292"/>
         </Size>
@@ -37,7 +37,7 @@
         <Layers>
             <Layer level="BACKGROUND">
                 <!-- OUTER BACKGROUND -->
-                <Texture name="$parentBackgroundPurple">
+                <Texture name="$parent_BackgroundPurple">
                     <Size>
                         <AbsDimension x="516" y="296"/>
                     </Size>
@@ -50,7 +50,7 @@
 
             <Layer level="ARTWORK">
                 <!-- INNER BACKGROUND -->
-                <Texture name="$parentBackground">
+                <Texture name="$parent_Background">
                     <Size>
                         <AbsDimension x="512" y="292"/>
                     </Size>
@@ -63,18 +63,18 @@
 
             <Layer level="OVERLAY">
                 <!-- TITLE -->
-                <FontString name="$parentTitle" inherits="MethWheelchair_MorpheusFont" text="Meth Wheelchair">
+                <FontString name="$parent_Title" inherits="MethWheelchair_MorpheusFont" text="Meth Wheelchair">
                     <Anchors>
                         <Anchor point="TOP">
                             <Offset>
-                                <AbsDimension x="0" y="-24"/>
+                                <AbsDimension x="0" y="-22"/>
                             </Offset>
                         </Anchor>
                     </Anchors>
                 </FontString>
 
                 <!-- TOP LEFT CHAIN -->
-                <Texture name="$parentCornerTopLeft" file="Interface\AddOns\MethWheelchair\CornerTopLeft.tga">
+                <Texture name="$parent_CornerTopLeft" file="Interface\AddOns\MethWheelchair\CornerTopLeft.tga">
                     <Size>
                         <AbsDimension x="56" y="56"/>
                     </Size>
@@ -88,7 +88,7 @@
                 </Texture>
 
                 <!-- TOP RIGHT CHAIN -->
-                <Texture name="$parentCornerTopRight" file="Interface\AddOns\MethWheelchair\CornerTopRight.tga">
+                <Texture name="$parent_CornerTopRight" file="Interface\AddOns\MethWheelchair\CornerTopRight.tga">
                     <Size>
                         <AbsDimension x="56" y="56"/>
                     </Size>
@@ -102,7 +102,7 @@
                 </Texture>
 
                 <!-- BOTTOM RIGHT CHAIN -->
-                <Texture name="$parentCornerBottomRight" file="Interface\AddOns\MethWheelchair\CornerBottomRight.tga">
+                <Texture name="$parent_CornerBottomRight" file="Interface\AddOns\MethWheelchair\CornerBottomRight.tga">
                     <Size>
                         <AbsDimension x="56" y="56"/>
                     </Size>
@@ -116,7 +116,7 @@
                 </Texture>
 
                 <!-- BOTTOM LEFT CHAIN -->
-                <Texture name="$parentCornerBottomLeft" file="Interface\AddOns\MethWheelchair\CornerBottomLeft.tga">
+                <Texture name="$parent_CornerBottomLeft" file="Interface\AddOns\MethWheelchair\CornerBottomLeft.tga">
                     <Size>
                         <AbsDimension x="56" y="56"/>
                     </Size>
@@ -130,7 +130,7 @@
                 </Texture>
 
                 <!-- SHACKLE ICON -->
-                <Texture name="$parentShackleIcon" file="Interface\Icons\INV_Belt_18">
+                <Texture name="$parent_ShackleIcon" file="Interface\Icons\INV_Belt_18">
                     <Size>
                         <AbsDimension x="96" y="96"/>
                     </Size>
@@ -144,7 +144,7 @@
                 </Texture>
 
                 <!-- VERSION -->
-                <FontString name="$parentVersion" inherits="MethWheelchair_FrizqtFont" text="">
+                <FontString name="$parent_Version" inherits="MethWheelchair_FrizqtFont" text="">
                     <Anchors>
                         <Anchor point="BOTTOMRIGHT">
                             <Offset>
@@ -160,7 +160,7 @@
             <OnLoad>
                 this:RegisterForDrag("LeftButton")
 
-                local versionFontString = getglobal(this:GetName().."Version")
+                local versionFontString = getglobal(this:GetName().."_Version")
                 versionFontString:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
                 versionFontString:SetTextColor(0.63, 0.27, 0.72, 1.0)
 
@@ -179,224 +179,281 @@
         </Scripts>
 
         <Frames>
-            <!-- SHOW LOGIN INFO -->
-            <CheckButton name="MethWheelchair_Option_ShowLoginInfo" inherits="OptionsCheckButtonTemplate">
-                <Size>
-                    <AbsDimension x="26" y="26"/>
-                </Size>
+            <Frame name="$parent_Options" setAllPoints="true">
+
                 <Anchors>
-                    <Anchor point="TOPLEFT">
+                    <Anchor point="CENTER">
                         <Offset>
-                            <AbsDimension x="32" y="-56"/>
+                            <AbsDimension x="0" y="0"/>
                         </Offset>
                     </Anchor>
                 </Anchors>
+
+                <Frames>
+                    <!-- SHOW LOGIN INFO -->
+                    <CheckButton name="$parent_ShowLoginInfo" inherits="OptionsCheckButtonTemplate">
+                        <Size>
+                            <AbsDimension x="24" y="24"/>
+                        </Size>
+                        <Anchors>
+                            <Anchor point="TOPLEFT">
+                                <Offset>
+                                    <AbsDimension x="0" y="0"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Scripts>
+                            <OnLoad>
+                                local text = getglobal(this:GetName().."Text")
+                                text:SetText("Show login info")
+                                text:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+                                text:SetTextColor(0.92, 0.92, 1.0, 1.0)
+                                this:SetHitRectInsets(0, 0, 0, 0)
+                            </OnLoad>
+                            <OnClick>
+                                if (this:GetChecked() == 1) then
+                                    METHWHEELCHAIR_CONFIG.LOGIN_INFO = true
+                                else
+                                    METHWHEELCHAIR_CONFIG.LOGIN_INFO = false
+                                end
+                            </OnClick>
+                        </Scripts>
+                    </CheckButton>
+
+
+                    <!-- ENABLE FULL SCREEN EFFECT -->
+                    <CheckButton name="$parent_EnableFullScreenEffect" inherits="OptionsCheckButtonTemplate">
+                        <Size>
+                            <AbsDimension x="24" y="24"/>
+                        </Size>
+                        <Anchors>
+                            <Anchor point="TOP" relativeTo="$parent_ShowLoginInfo" relativePoint="TOP">
+                                <Offset>
+                                    <AbsDimension x="0" y="-26"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Scripts>
+                            <OnLoad>
+                                local text = getglobal(this:GetName().."Text")
+                                text:SetText("Enable full-screen effect")
+                                text:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+                                text:SetTextColor(0.92, 0.92, 1.0, 1.0)
+                                this:SetHitRectInsets(0, 0, 0, 0)
+                            </OnLoad>
+                            <OnClick>
+                                if (this:GetChecked() == 1) then
+                                    METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = true
+                                else
+                                    METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = false
+                                end
+                            </OnClick>
+                        </Scripts>
+                    </CheckButton>
+
+
+                    <!-- UNBIND AUTORUN BY SUBZONE -->
+                    <CheckButton name="$parent_UnbindAutorunBySubZone" inherits="OptionsCheckButtonTemplate">
+                        <Size>
+                            <AbsDimension x="24" y="24"/>
+                        </Size>
+                        <Anchors>
+                            <Anchor point="TOP" relativeTo="$parent_EnableFullScreenEffect" relativePoint="TOP">
+                                <Offset>
+                                    <AbsDimension x="0" y="-26"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Scripts>
+                            <OnLoad>
+                                local text = getglobal(this:GetName().."Text")
+                                text:SetText("Unbind auto run on Meth platform")
+                                text:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+                                text:SetTextColor(0.92, 0.92, 1.0, 1.0)
+                                this:SetHitRectInsets(0, 0, 0, 0)
+                            </OnLoad>
+                            <OnClick>
+                                if (this:GetChecked() == 1) then
+                                    METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = true
+                                else
+                                    METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = false
+                                end
+                                MethWheelchair.UpdateAutorunKeybind()
+                            </OnClick>
+                        </Scripts>
+                    </CheckButton>
+
+
+                    <!-- UNBIND JUMP BY SUBZONE -->
+                    <CheckButton name="$parent_UnbindJumpBySubZone" inherits="OptionsCheckButtonTemplate">
+                        <Size>
+                            <AbsDimension x="24" y="24"/>
+                        </Size>
+                        <Anchors>
+                            <Anchor point="TOP" relativeTo="$parent_UnbindAutorunBySubZone" relativePoint="TOP">
+                                <Offset>
+                                    <AbsDimension x="0" y="-26"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Scripts>
+                            <OnLoad>
+                                local text = getglobal(this:GetName().."Text")
+                                text:SetText("Unbind jump on Meth platform")
+                                text:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+                                text:SetTextColor(0.92, 0.92, 1.0, 1.0)
+                                this:SetHitRectInsets(0, 0, 0, 0)
+                            </OnLoad>
+                            <OnClick>
+                                if (this:GetChecked() == 1) then
+                                    METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = true
+                                else
+                                    METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = false
+                                end
+                                MethWheelchair.UpdateJumpKeybind()
+                            </OnClick>
+                        </Scripts>
+                    </CheckButton>
+
+
+                    <!-- EARLY UNBIND -->
+                    <CheckButton name="$parent_UnbindBeforeShackle" inherits="OptionsCheckButtonTemplate">
+                        <Size>
+                            <AbsDimension x="24" y="24"/>
+                        </Size>
+                        <Anchors>
+                            <Anchor point="TOP" relativeTo="$parent_UnbindJumpBySubZone" relativePoint="TOP">
+                                <Offset>
+                                    <AbsDimension x="0" y="-26"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Frames>
+                            <!-- EARLY UNBIND SLIDER -->
+                            <Slider name="$parent_Slider" inherits="OptionsSliderTemplate">
+                                <Size>
+                                    <AbsDimension x="150" y="16"/>
+                                </Size>
+                                <Anchors>
+                                    <Anchor point="BOTTOMRIGHT">
+                                        <Offset>
+                                            <AbsDimension x="150" y="-14"/>
+                                        </Offset>
+                                    </Anchor>
+                                </Anchors>
+                                <Scripts>
+                                    <OnLoad>
+                                        getglobal(this:GetName().."Text"):SetText("")
+                                        getglobal(this:GetName().."Low"):SetText("")
+                                        getglobal(this:GetName().."High"):SetText("")
+
+                                        this:SetMinMaxValues(1, 3000)
+                                        this:SetValueStep(1)
+                                    </OnLoad>
+                                    <OnValueChanged>
+                                        local value = this:GetValue()
+                                        local text = getglobal(this:GetParent():GetName().."Text")
+                                        text:SetText("Unbind "..string.format("%.2f", (value / 1000)).." sec before Shackle")
+                                        if (METHWHEELCHAIR_CONFIG) then
+                                            METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE = value
+                                        end
+                                    </OnValueChanged>
+                                </Scripts>
+                            </Slider>
+                        </Frames>
+                        <Scripts>
+                            <OnLoad>
+                                local text = getglobal(this:GetName().."Text")
+                                text:SetText("Early unbind")
+                                text:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+                                text:SetTextColor(0.92, 0.92, 1.0, 1.0)
+                                this:SetHitRectInsets(0, 0, 0, 0)
+                            </OnLoad>
+                            <OnClick>
+                                if (this:GetChecked() == 1) then
+                                    METHWHEELCHAIR_CONFIG.EARLY_UNBIND = true
+                                else
+                                    METHWHEELCHAIR_CONFIG.EARLY_UNBIND = false
+                                end
+                            </OnClick>
+                        </Scripts>
+                    </CheckButton>
+
+
+                    <!-- BLOCK LEFT MOUSE BUTTON -->
+                    <CheckButton name="$parent_BlockLeftMouseButton" inherits="OptionsCheckButtonTemplate">
+                        <Size>
+                            <AbsDimension x="24" y="24"/>
+                        </Size>
+
+                        <Anchors>
+                            <Anchor point="TOP" relativeTo="$parent_UnbindBeforeShackle" relativePoint="TOP">
+                                <Offset>
+                                    <AbsDimension x="0" y="-40"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Scripts>
+                            <OnLoad>
+                                local text = getglobal(this:GetName().."Text")
+                                text:SetText("Block left mouse button")
+                                text:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+                                text:SetTextColor(0.92, 0.92, 1.0, 1.0)
+                                this:SetHitRectInsets(0, 0, 0, 0)
+                            </OnLoad>
+                            <OnClick>
+                                if (this:GetChecked() == 1) then
+                                    METHWHEELCHAIR_CONFIG.BLOCK_LMB = true
+                                else
+                                    METHWHEELCHAIR_CONFIG.BLOCK_LMB = false
+                                end
+                            </OnClick>
+                        </Scripts>
+                    </CheckButton>
+
+
+                    <!-- MUTUAL MOUSE BUTTON BLOCKING -->
+                    <CheckButton name="$parent_AllowOnlyOneMouseButtonAtATime" inherits="OptionsCheckButtonTemplate">
+                        <Size>
+                            <AbsDimension x="24" y="24"/>
+                        </Size>
+
+                        <Anchors>
+                            <Anchor point="TOP" relativeTo="$parent_BlockLeftMouseButton" relativePoint="TOP">
+                                <Offset>
+                                    <AbsDimension x="0" y="-26"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Scripts>
+                            <OnLoad>
+                                local text = getglobal(this:GetName().."Text")
+                                text:SetText("Allow only one mouse button at a time")
+                                text:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+                                text:SetTextColor(0.92, 0.92, 1.0, 1.0)
+                                this:SetHitRectInsets(0, 0, 0, 0)
+                            </OnLoad>
+                            <OnClick>
+                                if (this:GetChecked() == 1) then
+                                    METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = true
+                                else
+                                    METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = false
+                                end
+                            </OnClick>
+                        </Scripts>
+                    </CheckButton>
+
+                </Frames>
+
                 <Scripts>
                     <OnLoad>
-                        local text = getglobal(this:GetName().."Text")
-                        text:SetText("Show login info")
-                        text:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
-                        text:SetTextColor(0.92, 0.92, 1.0, 1.0)
-                        this:SetHitRectInsets(0, 0, 0, 0)
+                        local parent = this:GetParent()
+                        this:SetWidth(parent:GetWidth() - 64)
+                        this:SetHeight(parent:GetHeight() - 100)
                     </OnLoad>
-                    <OnClick>
-                        if (this:GetChecked() == 1) then
-                            METHWHEELCHAIR_CONFIG.LOGIN_INFO = true
-                        else
-                            METHWHEELCHAIR_CONFIG.LOGIN_INFO = false
-                        end
-                    </OnClick>
                 </Scripts>
-            </CheckButton>
+            </Frame>
 
-            <!-- ENABLE FULL SCREEN EFFECT -->
-            <CheckButton name="MethWheelchair_Option_EnableFullScreenEffect" inherits="OptionsCheckButtonTemplate">
-                <Size>
-                    <AbsDimension x="26" y="26"/>
-                </Size>
-
-                <Anchors>
-                    <Anchor point="TOP" relativeTo="MethWheelchair_Option_ShowLoginInfo" relativePoint="TOP">
-                        <Offset>
-                            <AbsDimension x="0" y="-30"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnLoad>
-                        local text = getglobal(this:GetName().."Text")
-                        text:SetText("Enable full-screen effect")
-                        text:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
-                        text:SetTextColor(0.92, 0.92, 1.0, 1.0)
-                        this:SetHitRectInsets(0, 0, 0, 0)
-                    </OnLoad>
-                    <OnClick>
-                        if (this:GetChecked() == 1) then
-                            METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = true
-                        else
-                            METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = false
-                        end
-                    </OnClick>
-                </Scripts>
-            </CheckButton>
-
-            <!-- EARLY UNBIND -->
-            <CheckButton name="MethWheelchair_Option_UnbindBeforeShackle" inherits="OptionsCheckButtonTemplate">
-                <Size>
-                    <AbsDimension x="26" y="26"/>
-                </Size>
-
-                <Anchors>
-                    <Anchor point="TOP" relativeTo="MethWheelchair_Option_EnableFullScreenEffect" relativePoint="TOP">
-                        <Offset>
-                            <AbsDimension x="0" y="-30"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnLoad>
-                        local text = getglobal(this:GetName().."Text")
-                        text:SetText("Early unbind")
-                        text:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
-                        text:SetTextColor(0.92, 0.92, 1.0, 1.0)
-                        this:SetHitRectInsets(0, 0, 0, 0)
-                    </OnLoad>
-                    <OnClick>
-                        if (this:GetChecked() == 1) then
-                            METHWHEELCHAIR_CONFIG.EARLY_UNBIND = true
-                        else
-                            METHWHEELCHAIR_CONFIG.EARLY_UNBIND = false
-                        end
-                    </OnClick>
-                </Scripts>
-            </CheckButton>
-
-            <!-- EARLY UNBIND SLIDER -->
-            <Slider name="MethWheelchair_Option_UnbindBeforeShackle_Slider" inherits="OptionsSliderTemplate">
-                <Size>
-                    <AbsDimension x="150" y="16"/>
-                </Size>
-                <Anchors>
-                    <Anchor point="BOTTOMRIGHT" relativeTo="MethWheelchair_Option_UnbindBeforeShackle" relativePoint="BOTTOMRIGHT">
-                        <Offset>
-                            <AbsDimension x="150" y="-16"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnLoad>
-                        getglobal(this:GetName().."Text"):SetText("")
-                        getglobal(this:GetName().."Low"):SetText("")
-                        getglobal(this:GetName().."High"):SetText("")
-
-                        this:SetMinMaxValues(1, 3000)
-                        this:SetValueStep(1)
-                    </OnLoad>
-                    <OnValueChanged>
-                        local value = this:GetValue()
-                        local text = MethWheelchair_Option_UnbindBeforeShackleText
-                        text:SetText("Unbind "..string.format("%.2f", (value / 1000)).." sec before Shackle")
-                        if (METHWHEELCHAIR_CONFIG) then
-                            METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE = value
-                        end
-                    </OnValueChanged>
-                </Scripts>
-            </Slider>
-
-            <!-- BLOCK LEFT MOUSE BUTTON -->
-            <CheckButton name="MethWheelchair_Option_BlockLeftMouseButton" inherits="OptionsCheckButtonTemplate">
-                <Size>
-                    <AbsDimension x="26" y="26"/>
-                </Size>
-
-                <Anchors>
-                    <Anchor point="TOP" relativeTo="MethWheelchair_Option_UnbindBeforeShackle" relativePoint="TOP">
-                        <Offset>
-                            <AbsDimension x="0" y="-42"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnLoad>
-                        local text = getglobal(this:GetName().."Text")
-                        text:SetText("Block left mouse button")
-                        text:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
-                        text:SetTextColor(0.92, 0.92, 1.0, 1.0)
-                        this:SetHitRectInsets(0, 0, 0, 0)
-                    </OnLoad>
-                    <OnClick>
-                        if (this:GetChecked() == 1) then
-                            METHWHEELCHAIR_CONFIG.BLOCK_LMB = true
-                        else
-                            METHWHEELCHAIR_CONFIG.BLOCK_LMB = false
-                        end
-                    </OnClick>
-                </Scripts>
-            </CheckButton>
-
-            <!-- MUTUAL MOUSE BUTTON BLOCKING -->
-            <CheckButton name="MethWheelchair_Option_AllowOnlyOneMouseButtonAtATime" inherits="OptionsCheckButtonTemplate">
-                <Size>
-                    <AbsDimension x="26" y="26"/>
-                </Size>
-
-                <Anchors>
-                    <Anchor point="TOP" relativeTo="MethWheelchair_Option_BlockLeftMouseButton" relativePoint="TOP">
-                        <Offset>
-                            <AbsDimension x="0" y="-30"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnLoad>
-                        local text = getglobal(this:GetName().."Text")
-                        text:SetText("Allow only one mouse button at a time")
-                        text:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
-                        text:SetTextColor(0.92, 0.92, 1.0, 1.0)
-                        this:SetHitRectInsets(0, 0, 0, 0)
-                    </OnLoad>
-                    <OnClick>
-                        if (this:GetChecked() == 1) then
-                            METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = true
-                        else
-                            METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = false
-                        end
-                    </OnClick>
-                </Scripts>
-            </CheckButton>
-
-
-            <!-- MUTUAL MOUSE BUTTON BLOCKING -->
-            <CheckButton name="MethWheelchair_Option_DisableJumpBySubZone" inherits="OptionsCheckButtonTemplate">
-                <Size>
-                    <AbsDimension x="26" y="26"/>
-                </Size>
-
-                <Anchors>
-                    <Anchor point="TOP" relativeTo="MethWheelchair_Option_AllowOnlyOneMouseButtonAtATime" relativePoint="TOP">
-                        <Offset>
-                            <AbsDimension x="0" y="-30"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnLoad>
-                        local text = getglobal(this:GetName().."Text")
-                        text:SetText("Disable jump on Meth platform")
-                        text:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
-                        text:SetTextColor(0.92, 0.92, 1.0, 1.0)
-                        this:SetHitRectInsets(0, 0, 0, 0)
-                    </OnLoad>
-                    <OnClick>
-                        if (this:GetChecked() == 1) then
-                            METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE = true
-                        else
-                            METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE = false
-                        end
-                        MethWheelchair.UpdateJumpKeybind()
-                    </OnClick>
-                </Scripts>
-            </CheckButton>
 
 
             <!-- TEST BUTTON -->
@@ -495,7 +552,7 @@
                     </OnLoad>
 
                     <OnClick>
-                        MethWheelchairMainFrame:Hide()
+                        MethWheelchair_MainFrame:Hide()
                     </OnClick>
 
                     <OnEnter>
