@@ -583,6 +583,9 @@ local function RestoreKeybinds()
         ) then
             -- do nothing, otherwise protected function error pops up
             -- because blocking Left Mouse Button involves hooking and reassigning semi-protected function
+        if (mt == "TOGGLEAUTORUN" and METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE)
+            -- also do nothing
+            -- if disabled by subzone
         else
             if (keybind[1]) then
                 SetBinding(keybind[1], mt)
