@@ -4,7 +4,7 @@ BINDING_HEADER_METHWHEELCHAIR = "MethWheelchair"
 local ADDON_PREFIX = "METHWHEELCHAIR"
 
 
-local DEBUG_MODE = false
+local DEBUG_MODE = true
 MethWheelchair.DebugMode = DEBUG_MODE
 
 
@@ -59,6 +59,12 @@ local SettingKeys = {
     ["mutualmousebuttonblock"] = "MUTUAL_MOUSE_BLOCK",
     ["mutual_mouse_block"] = "MUTUAL_MOUSE_BLOCK",
     ["mutual_mouse_button_block"] = "MUTUAL_MOUSE_BLOCK",
+
+    ["jump"] = "DISABLE_JUMP_BY_SUBZONE",
+    ["disablejump"] = "DISABLE_JUMP_BY_SUBZONE",
+    ["disable_jump"] = "DISABLE_JUMP_BY_SUBZONE",
+    ["disablejumpbysubzone"] = "DISABLE_JUMP_BY_SUBZONE",
+    ["disable_jump_by_subzone"] = "DISABLE_JUMP_BY_SUBZONE",
 
     ["superwow"] = "SUPERWOW",
 
@@ -541,9 +547,13 @@ local function UpdateJumpKeybind(forceSubZone)
     if (METHWHEELCHAIR_CONFIG.DISABLE_JUMP_BY_SUBZONE
         and (IsNoJumpSubZone(GetSubZoneText()) or forceSubZone)
     ) then
+        local replacementActionId = 1
+        
         for _, keybind in JumpKeybinds do
             if (keybind) then
-                SetBinding(keybind, nil)
+                --SetBinding(keybind, nil)
+                SetBinding(keybind, "METHWHEELCHAIR_REPLACEMENT_ACTION_JUMP"..tostring(replacementActionId))
+                replacementActionId = replacementActionId + 1
             end
         end
     else
