@@ -5,6 +5,7 @@ After debuff is gone or after 6.5 secs of cast event re-enables keybinds.<br>
 Hitting movement keybinds during that time will cancel spell casts.
 
 
+Use ``/mw`` to toggle UI.<br>
 Use ``/mw restore`` to forcefully restore your keybinds.<br>
 Use ``/mw unbind`` or ``/mw test`` to test keybind removal.<br>
 Use ``/mw keybinds`` to display list of saved keybinds.<br>
