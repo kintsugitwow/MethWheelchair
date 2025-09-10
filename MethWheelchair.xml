@@ -3,6 +3,8 @@
     xsi:schemaLocation="http://www.blizzard.com/wow/ui/..\FrameXML\UI.xsd">
     
     <!-- TEMPLATES -->
+
+    <!-- TITLE FONT -->
     <Font name="MethWHeelchair_MorpheusFont" font="Fonts\MORPHEUS.TTF" virtual="true">
         <FontHeight>
             <AbsValue val="28"/>
@@ -16,31 +18,37 @@
         <Color r="0.63" g="0.27" b="0.72"/>
     </Font>
 
+    <!-- SETTING FONT -->
     <Font name="MethWheelchair_FrizqtFont" font="Fonts\FRIZQT__.TTF" virtual="true">
         <FontHeight>
-            <AbsValue val="11"/>
+            <AbsValue val="10"/>
         </FontHeight>
         <Color r="0.92" g="0.92" b="1.0"/>
     </Font>
+
+    <!-- VERSION FONT -->
+    <Font name="MethWheelchair_VersionFont" font="Fonts\FRIZQT__.TTF" virtual="true">
+        <FontHeight>
+            <AbsValue val="10"/>
+        </FontHeight>
+        <Color r="0.63" g="0.27" b="0.72"/>
+    </Font>
+
 
 
     <!-- MAIN FRAME -->
     <Frame name="MethWheelchair_MainFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true" frameStrata="HIGH">
         <Size>
-            <AbsDimension x="512" y="292"/>
+            <AbsDimension x="480" y="292"/>
         </Size>
-
         <Anchors>
             <Anchor point="CENTER"/>
         </Anchors>
-
         <Layers>
+
             <Layer level="BACKGROUND">
                 <!-- OUTER BACKGROUND -->
-                <Texture name="$parent_BackgroundPurple">
-                    <Size>
-                        <AbsDimension x="516" y="296"/>
-                    </Size>
+                <Texture name="$parent_OuterBackground">
                     <Anchors>
                         <Anchor point="CENTER"/>
                     </Anchors>
@@ -48,12 +56,10 @@
                 </Texture>
             </Layer>
 
+
             <Layer level="ARTWORK">
                 <!-- INNER BACKGROUND -->
-                <Texture name="$parent_Background">
-                    <Size>
-                        <AbsDimension x="512" y="292"/>
-                    </Size>
+                <Texture name="$parent_InnerBackground">
                     <Anchors>
                         <Anchor point="CENTER"/>
                     </Anchors>
@@ -61,7 +67,9 @@
                 </Texture>
             </Layer>
 
+
             <Layer level="OVERLAY">
+
                 <!-- TITLE -->
                 <FontString name="$parent_Title" inherits="MethWheelchair_MorpheusFont" text="Meth Wheelchair">
                     <Anchors>
@@ -143,8 +151,8 @@
                     </Anchors>
                 </Texture>
 
-                <!-- VERSION -->
-                <FontString name="$parent_Version" inherits="MethWheelchair_FrizqtFont" text="">
+                <!-- AUTHOR -->
+                <FontString name="$parent_Author" inherits="MethWheelchair_VersionFont" text="Made by Kintsugi &lt;Moments&gt;">
                     <Anchors>
                         <Anchor point="BOTTOMRIGHT">
                             <Offset>
@@ -153,8 +161,20 @@
                         </Anchor>
                     </Anchors>
                 </FontString>
+
+                <!-- VERSION -->
+                <FontString name="$parent_Version" inherits="MethWheelchair_VersionFont" text="">
+                    <Anchors>
+                        <Anchor point="BOTTOMLEFT">
+                            <Offset>
+                                <AbsDimension x="12" y="12"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </FontString>
             </Layer>
         </Layers>
+
 
         <Scripts>
             <OnLoad>
@@ -162,13 +182,22 @@
 
                 local versionFontString = getglobal(this:GetName().."_Version")
                 versionFontString:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
-                versionFontString:SetTextColor(0.63, 0.27, 0.72, 1.0)
-
                 local version = "v"..MethWheelchair.GetAddonVersion()
                 if (MethWheelchair.DebugMode) then
                     version = version.." (Debug)"
                 end
                 versionFontString:SetText(version)
+
+                local authorFontString = getglobal(this:GetName().."_Author")
+                authorFontString:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+
+                local outerBackground = getglobal(this:GetName().."_OuterBackground")
+                outerBackground:SetWidth(this:GetWidth() + 4)
+                outerBackground:SetHeight(this:GetHeight() + 4)
+
+                local innerBackground = getglobal(this:GetName().."_InnerBackground")
+                innerBackground:SetWidth(this:GetWidth())
+                innerBackground:SetHeight(this:GetHeight())
             </OnLoad>
             <OnDragStart>
                 this:StartMoving()
@@ -178,9 +207,9 @@
             </OnDragStop>
         </Scripts>
 
+
         <Frames>
             <Frame name="$parent_Options" setAllPoints="true">
-
                 <Anchors>
                     <Anchor point="CENTER">
                         <Offset>
@@ -188,8 +217,8 @@
                         </Offset>
                     </Anchor>
                 </Anchors>
-
                 <Frames>
+
                     <!-- SHOW LOGIN INFO -->
                     <CheckButton name="$parent_ShowLoginInfo" inherits="OptionsCheckButtonTemplate">
                         <Size>
@@ -220,7 +249,6 @@
                         </Scripts>
                     </CheckButton>
 
-
                     <!-- ENABLE FULL SCREEN EFFECT -->
                     <CheckButton name="$parent_EnableFullScreenEffect" inherits="OptionsCheckButtonTemplate">
                         <Size>
@@ -250,7 +278,6 @@
                             </OnClick>
                         </Scripts>
                     </CheckButton>
-
 
                     <!-- UNBIND AUTORUN BY SUBZONE -->
                     <CheckButton name="$parent_UnbindAutorunBySubZone" inherits="OptionsCheckButtonTemplate">
@@ -283,7 +310,6 @@
                         </Scripts>
                     </CheckButton>
 
-
                     <!-- UNBIND JUMP BY SUBZONE -->
                     <CheckButton name="$parent_UnbindJumpBySubZone" inherits="OptionsCheckButtonTemplate">
                         <Size>
@@ -314,7 +340,6 @@
                             </OnClick>
                         </Scripts>
                     </CheckButton>
-
 
                     <!-- EARLY UNBIND -->
                     <CheckButton name="$parent_UnbindBeforeShackle" inherits="OptionsCheckButtonTemplate">
@@ -379,7 +404,6 @@
                         </Scripts>
                     </CheckButton>
 
-
                     <!-- BLOCK LEFT MOUSE BUTTON -->
                     <CheckButton name="$parent_BlockLeftMouseButton" inherits="OptionsCheckButtonTemplate">
                         <Size>
@@ -411,7 +435,6 @@
                         </Scripts>
                     </CheckButton>
 
-
                     <!-- MUTUAL MOUSE BUTTON BLOCKING -->
                     <CheckButton name="$parent_AllowOnlyOneMouseButtonAtATime" inherits="OptionsCheckButtonTemplate">
                         <Size>
@@ -442,7 +465,6 @@
                             </OnClick>
                         </Scripts>
                     </CheckButton>
-
                 </Frames>
 
                 <Scripts>
@@ -453,7 +475,6 @@
                     </OnLoad>
                 </Scripts>
             </Frame>
-
 
 
             <!-- TEST BUTTON -->

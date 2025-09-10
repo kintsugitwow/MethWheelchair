@@ -17,19 +17,26 @@ local CONFIG_DEFAULT_VALUE = {
     -- can't target enemies by clicking models, do it by clicking nameplates or tab target
     BLOCK_LMB = true,
 
+    -- only one mouse button allowed at a time
     MUTUAL_MOUSE_BLOCK = true,
 
+    -- no autorunning on meth platform
     UNBIND_AUTORUN_BY_SUBZONE = true,
 
-    UNBIND_JUMP_BY_SUBZONE = false,
+    -- no jumping on meth platform
+    UNBIND_JUMP_BY_SUBZONE = true,
 
     -- use SuperWoW functions
     SUPERWOW = true,
 
-    -- just annoying, player should know when to stop moving, not block him 2 sec before
+    -- make screen dark during Shackle
+    -- only during Shackle cast and for 0.5 sec after Shackle debuff is gone
+    -- if debuff is not applied, hide after 0.5 sec
     FULLSCREENEFFECT = true,
 
+    -- unbind keybind earlier by (ShackleCastDuration - EARLY_UNBIND_VALUE)
     EARLY_UNBIND = false,
+    -- time value in ms
     EARLY_UNBIND_VALUE = 1500,
 
     -- silent debug
