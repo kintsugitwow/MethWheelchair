@@ -1741,7 +1741,7 @@ local function CmdAutorun(msg)
         Print("Unbinding autorun on Meth platform is now \124cff00ff00enabled\124r.")
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = false
-        MMethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(false)
+        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(false)
         Print("Unbinding autorun on Meth platform is now \124cffff0000disabled\124r.")
     elseif (METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE == true) then
         METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = false
