@@ -1737,23 +1737,25 @@ local function CmdAutorun(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = true
-        MethWheelchair_MainFrame_Options_DisableAutorunBySubZone:SetChecked(true)
+        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(true)
         Print("Unbinding autorun on Meth platform is now \124cff00ff00enabled\124r.")
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = false
-        MMethWheelchair_MainFrame_Options_DisableAutorunBySubZone:SetChecked(false)
+        MMethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(false)
         Print("Unbinding autorun on Meth platform is now \124cffff0000disabled\124r.")
     elseif (METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE == true) then
         METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = false
-        MethWheelchair_MainFrame_Options_DisableAutorunBySubZone:SetChecked(false)
+        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(false)
         Print("Unbinding autorun on Meth platform is now \124cffff0000disabled\124r.")
     else
         METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = true
-        MethWheelchair_MainFrame_Options_DisableAutorunBySubZone:SetChecked(true)
+        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(true)
         Print("Unbinding autorun on Meth platform is now \124cff00ff00enabled\124r.")
     end
 
     UpdateAutorunKeybind()
+
+    return true
 end
 
 local function CmdJump(msg)
@@ -1763,19 +1765,19 @@ local function CmdJump(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = true
-        MethWheelchair_MainFrame_Options_DisableJumpBySubZone:SetChecked(true)
+        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(true)
         Print("Unbinding jump on Meth platform is now \124cff00ff00enabled\124r.")
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = false
-        MethWheelchair_MainFrame_Options_DisableJumpBySubZone:SetChecked(false)
+        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(false)
         Print("Unbinding jump on Meth platform is now \124cffff0000disabled\124r.")
     elseif (METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE == true) then
         METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = false
-        MethWheelchair_MainFrame_Options_DisableJumpBySubZone:SetChecked(false)
+        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(false)
         Print("Unbinding jump on Meth platform is now \124cffff0000disabled\124r.")
     else
         METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = true
-        MethWheelchair_MainFrame_Options_DisableJumpBySubZone:SetChecked(true)
+        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(true)
         Print("Unbinding jump on Meth platform is now \124cff00ff00enabled\124r.")
     end
 
