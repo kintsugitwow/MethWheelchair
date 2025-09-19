@@ -10,10 +10,13 @@ Use ``/mw restore`` to forcefully restore your keybinds.<br>
 Use ``/mw unbind`` or ``/mw test`` to test keybind removal.<br>
 Use ``/mw keybinds`` to display list of saved keybinds.<br>
 Use ``/mw logininfo`` to toggle display of saved keybinds on login.<br>
+Use ``/mw fse`` to toggle displaying full-screen effect.<br>
 Use ``/mw lmb`` to toggle blocking left mouse button (prevents moving on pressing left and right mouse buttons simultaneously). *More info in Known issues section.*<br>
 Use ``/mw mmb`` to toggle mutual blocking of both mouse buttons (prevents moving on pressing left and right mouse buttons simultaneously). *More info in Known issues section.*<br>
-Use ``/mw autorun`` to toggle unbinding auto run while on Meth platform. Enabled by default.<br>
-Use ``/mw jump`` to toggle unbinding jump while on Meth platform. Enabled by default.<br>
+Use ``/mw autorun`` to toggle unbinding auto run while on Meth platform.<br>
+Use ``/mw jump`` to toggle unbinding jump while on Meth platform.<br>
+Use ``/mw eub`` to toggle unbinding keybinds before shackle cast finishes depending on configured value.<br>
+Use ``/mw eub <number_value>`` to set early unbind value (replace ``<number_value>`` with number between 0.0 and 3.0).<br>
 
 
 ## Known issues:

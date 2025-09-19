@@ -24,7 +24,7 @@ local CONFIG_DEFAULT_VALUE = {
     UNBIND_AUTORUN_BY_SUBZONE = true,
 
     -- no jumping on meth platform
-    UNBIND_JUMP_BY_SUBZONE = true,
+    UNBIND_JUMP_BY_SUBZONE = false,
 
     -- use SuperWoW functions
     SUPERWOW = true,
@@ -38,6 +38,9 @@ local CONFIG_DEFAULT_VALUE = {
     EARLY_UNBIND = false,
     -- time value in ms
     EARLY_UNBIND_VALUE = 1500,
+
+    -- display who shattered shackles
+    SHOW_GUILTY = false,
 
     -- silent debug
     LISTEN = true,
@@ -106,7 +109,8 @@ local ShackleCastTime = 0
 local EarlyUnbindTime = nil
 local EarlyUnbindAddedCastDuration = 0
 
-
+local ShackleSpellID = 51916
+local ShackleShatterSpellID = 51917
 local ShackleDuration = 6.0
 local ShackleCastDuration = 3.0
 
@@ -117,12 +121,22 @@ local ShackleSpellNameTriggers = {
 
 -- on UNIT_CASTEVENT
 local ShackleSpellIDTriggers = {
-    51916,
+    ShackleSpellID,
+}
+
+-- on UNIT_CASTEVENT
+local ShackleShatterSpellIDTriggers = {
+    ShackleShatterSpellID,
 }
 
 -- on UnitDebuff
 local ShackleTextureTriggers = {
     "INV_Belt_18",
+}
+
+-- on CHAT_MSG_RAID_BOSS_EMOTE
+local ShackleEmoteTriggers = {
+    "Mephistroth begins to cast Shackles of the Legion",
 }
 
 -- on MINIMAP_ZONE_CHANGED
@@ -140,6 +154,7 @@ if (DEBUG_MODE) then
     tinsert(ShackleSpellNameTriggers, "Weakened Soul")
     -- ids
     tinsert(ShackleSpellIDTriggers, 2060) -- Greater Heal (Rank 1)
+    tinsert(ShackleShatterSpellIDTriggers, 2061) -- Flash Heal (Rank 1)
     -- textures
     tinsert(ShackleTextureTriggers, "AshesToAshes") -- Weakened Soul
     -- no autorun subzones
@@ -172,6 +187,8 @@ local JumpKeybinds = {}
 
 local AUTORUN_ACTION = "TOGGLEAUTORUN"
 local AutorunKeybinds = {}
+
+local MoveAndSteerCorrupted = false
 
 
 -- mouse 
@@ -283,9 +300,31 @@ local function IsShackleSpellID(spellID)
 end
 
 
+local function IsShackleShatterSpellID(spellID)
+    for _, sid in ShackleShatterSpellIDTriggers do
+        if (sid == spellID) then
+            return true
+        end
+    end
+
+    return false
+end
+
+
 local function IsShackleDebuffTexture(texture)
     for _, t in ShackleTextureTriggers do
         if (strfind(texture, t)) then
+            return true
+        end
+    end
+
+    return false
+end
+
+
+local function IsShackleEmote(text)
+    for _, t in ShackleEmoteTriggers do
+        if (strfind(text, t)) then
             return true
         end
     end
@@ -387,7 +426,7 @@ local function InitFullScreenEffect()
 
         FullScreenEffect:RegisterEvent("UNIT_CASTEVENT")
         FullScreenEffect:RegisterEvent("CHAT_MSG_RAID_BOSS_EMOTE")
-        FullScreenEffect:RegisterEvent("CHAT_MSG_RAID_LEADER")
+
         if (DEBUG_MODE) then
             FullScreenEffect:RegisterEvent("CHAT_MSG_WHISPER") -- test
         end
@@ -408,16 +447,12 @@ local function InitFullScreenEffect()
                     end
                 end
             elseif (event == "CHAT_MSG_RAID_BOSS_EMOTE") then
-                if ((not SUPERWOW_VERSION) or (not METHWHEELCHAIR_CONFIG.SUPERWOW)) then
-                    if (string.find(arg1, "Mephistroth begins to cast Shackles of the Legion")) then
-                        FullScreenEffect:Begin(GetTime() + ShackleCastDuration + ShackleDuration + 0.5)
-                    end
+                if (IsShackleEmote(arg1) and ((not SUPERWOW_VERSION) or (not METHWHEELCHAIR_CONFIG.SUPERWOW))) then
+                    FullScreenEffect:Begin(GetTime() + ShackleCastDuration + ShackleDuration + 0.5)
                 end
-            elseif (event == "CHAT_MSG_WHISPER" and DEBUG_MDOE) then -- test
-                if ((not SUPERWOW_VERSION) or (not METHWHEELCHAIR_CONFIG.SUPERWOW)) then
-                    if (string.find(arg1, "Mephistroth begins to cast Shackles of the Legion")) then
-                        FullScreenEffect:Begin(GetTime() + ShackleCastDuration + ShackleDuration + 0.5)
-                    end
+            elseif (event == "CHAT_MSG_WHISPER" and DEBUG_MODE) then -- test
+                if (IsShackleEmote(arg1) and ((not SUPERWOW_VERSION) or (not METHWHEELCHAIR_CONFIG.SUPERWOW))) then
+                    FullScreenEffect:Begin(GetTime() + ShackleCastDuration + ShackleDuration + 0.5)
                 end
             end
         end)
@@ -449,20 +484,32 @@ end
 
 
 function MethWheelchair.ShowUI()
-    MethWheelchair_MainFrame:Show()
+    if (MethWheelchair_MainFrame) then
+        MethWheelchair_MainFrame:Show()
+    else
+        Print("\124cffff0000UI is not initialized!\124r")
+    end
 end
 
 
 function MethWheelchair.HideUI()
-    MethWheelchair_MainFrame:Hide()
+    if (MethWheelchair_MainFrame) then
+        MethWheelchair_MainFrame:Hide()
+    else
+        Print("\124cffff0000UI is not initialized!\124r")
+    end
 end
 
 
 function MethWheelchair.ToggleUI()
-    if (MethWheelchair_MainFrame:IsShown()) then
-        MethWheelchair_MainFrame:Hide()
+    if (MethWheelchair_MainFrame) then
+        if (MethWheelchair_MainFrame:IsShown()) then
+            MethWheelchair_MainFrame:Hide()
+        else
+            MethWheelchair_MainFrame:Show()
+        end
     else
-        MethWheelchair_MainFrame:Show()
+        Print("\124cffff0000UI is not initialized!\124r")
     end
 end
 
@@ -545,11 +592,13 @@ local function UnbindAllKeybinds()
     local replacementActionId = 1
     for mt, keybind in Keybinds do
 
-        if (
-            (mt == "CAMERAORSELECTORMOVE" and METHWHEELCHAIR_CONFIG.BLOCK_LMB == false)
-        ) then
+        if (mt == "CAMERAORSELECTORMOVE" and METHWHEELCHAIR_CONFIG.BLOCK_LMB == false) then
             -- continue...
         else
+            if (mt == "MOVEANDSTEER" and METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
+                MoveAndSteerCorrupted = true
+            end
+
             -- unbind
             if (keybind[1]) then
                 SetBinding(keybind[1], "METHWHEELCHAIR_REPLACEMENT_ACTION_"..tostring(replacementActionId))
@@ -566,9 +615,7 @@ local function UnbindAllKeybinds()
     for k, mt in MovementTypes do
         local key1, key2 = GetBindingKey(mt)
 
-        if (
-            (mt == "CAMERAORSELECTORMOVE" and METHWHEELCHAIR_CONFIG.BLOCK_LMB == false)
-        ) then
+        if (mt == "CAMERAORSELECTORMOVE" and METHWHEELCHAIR_CONFIG.BLOCK_LMB == false) then
             -- continue...
         else
             -- check fail
@@ -585,8 +632,10 @@ end
 local function RestoreKeybinds()
     for mt, keybind in Keybinds do
 
-        if (mt == "MOVEANDSTEER" and METHWHEELCHAIR_CONFIG.BLOCK_LMB
-            and SUPERWOW_VERSION and METHWHEELCHAIR_CONFIG.SUPERWOW
+        if (mt == "MOVEANDSTEER"
+            and ((METHWHEELCHAIR_CONFIG.BLOCK_LMB and (SUPERWOW_VERSION and METHWHEELCHAIR_CONFIG.SUPERWOW))
+                or (MoveAndSteerCorrupted)
+            )
         ) then
             -- do nothing, otherwise protected function error pops up
             -- because blocking Left Mouse Button involves hooking and reassigning semi-protected function
@@ -954,6 +1003,14 @@ function()
             EarlyUnbindTime = GetTime() + EarlyUnbindAddedCastDuration
         end
     end
+
+    if (METHWHEELCHAIR_CONFIG.SHOW_GUILTY) then
+        if (IsShackleShatterSpellID(spellID) and (casterGUID == targetGUID) and (eventType == "CAST")) then
+            local name = UnitName(casterGUID)
+            local color = GetClassColor(casterGUID)
+            Print("\124cff"..color..name.."\124r \124cffff0000shattered\124r \124cffa044b9Shackles of the Legion\124r!")
+        end
+    end
 end)
 
 
@@ -961,7 +1018,7 @@ end)
 RegisterEvent("CHAT_MSG_RAID_BOSS_EMOTE",
 function()
     if (METHWHEELCHAIR_CONFIG.EARLY_UNBIND and ((not SUPERWOW_VERSION) or (not METHWHEELCHAIR_CONFIG.SUPERWOW))) then
-        if (string.find(arg1, "Mephistroth begins to cast Shackles of the Legion")) then
+        if (IsShackleEmote(arg1)) then
             EarlyUnbindAddedCastDuration = ((ShackleCastDuration - METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE) / 1000)
             EarlyUnbindTime = GetTime() + EarlyUnbindAddedCastDuration
         end
@@ -973,8 +1030,8 @@ if (DEBUG_MODE) then
 -- CHAT_MSG_WHISPER
 RegisterEvent("CHAT_MSG_WHISPER", -- test
 function()
-    if (METHWHEELCHAIR_CONFIG.EARLY_UNBIND and ((not SUPERWOW_VERSION) or (not METHWHEELCHAIR_CONFIG.SUPERWOW))) then
-        if (string.find(arg1, "Mephistroth begins to cast Shackles of the Legion")) then
+    if (METHWHEELCHAIR_CONFIG.EARLY_UNBIND and ((not SUPERWOW_VERSION) or (not METHWHEELCHAIR_CONFIG.SUPERWOW)) and DEBUG_MODE) then
+        if (IsShackleEmote(arg1)) then
             EarlyUnbindAddedCastDuration = ((ShackleCastDuration - METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE) / 1000)
             EarlyUnbindTime = GetTime() + EarlyUnbindAddedCastDuration
         end
@@ -984,7 +1041,9 @@ end
 
 
 local function ColorVersion(version)
-    if (tonumber(version) < GetAddonVersion()) then
+    if (not tonumber(version)) then
+        return"\124cffff0000"..version.."\124r"
+    elseif (tonumber(version) < GetAddonVersion()) then
         return"\124cffff0000"..version.."\124r"
     elseif (tonumber(version) > GetAddonVersion()) then
         return "\124cffffff00"..version.."\124r"
@@ -1238,20 +1297,48 @@ local function HandleAddonVersionCheck()
 
         local versions = {}
 
-        for sender, version in AddonVersionCheckRepliers do
+        for sender, version in pairs(AddonVersionCheckRepliers) do
             if (version and sender) then
                 if (not versions[version]) then
                     versions[version] = {}
                 end
-                tinsert(versions[version], "\124cff"..GetClassColor(GetRaidUnit(sender))..sender.."\124r")
+
+                local unit = GetRaidUnit(sender)
+                local classColor = GetClassColor(unit)
+                local _, class = UnitClass(unit)
+                tinsert(versions[version], {
+                    Unit = unit,
+                    Class = class,
+                    ClassColor = classColor,
+                    Name = sender
+                })
             end
         end
 
-        for version, senders in versions do
+        local versionKeys = {}
+        for version in pairs(versions) do
+            tinsert(versionKeys, version)
+        end
+
+        table.sort(versionKeys, function(a, b)
+            return (tonumber(a) or 0) > (tonumber(b) or 0)
+        end)
+
+        for _, version in versionKeys do
+            local senders = versions[version]
+            -- sort by class, name
+            table.sort(senders, function(a, b)
+                if (a.Class ~= b.Class) then
+                    return a.Class < b.Class
+                end
+                return a.Name < b.Name
+            end)
+
             local numSenders = table.getn(senders)
             local message = "Version "..tostring(ColorVersion(version)).." ("..numSenders.."): "
             for i = 1, numSenders, 1 do
-                message = message..senders[i]
+                local sender = senders[i]
+                message = message.."\124cff"..sender.ClassColor..tostring(sender.Name).."\124r"
                 if (i ~= numSenders) then
                     message = message..", "
                 end
@@ -1274,19 +1361,50 @@ local function HandleAddonVersionCheck()
                 end
             end
             if (not found) then
+                local classColor = GetClassColor(unit)
+                local _, class = UnitClass(unit)
+                
                 if (UnitIsConnected(unit)) then
-                    tinsert(didNotRespond, "\124cff"..GetClassColor(unit)..unitName.."\124r")
+                    tinsert(didNotRespond, {
+                        Unit = unit,
+                        Class = class,
+                        ClassColor = classColor,
+                        Name = unitName
+                    })
                 else
-                    tinsert(offline, "\124cff"..GetClassColor(unit)..unitName.."\124r")
+                    tinsert(offline, {
+                        Unit = unit,
+                        Class = class,
+                        ClassColor = classColor,
+                        Name = unitName
+                    })
                 end
             end
         end
 
+        -- sort DNR by class, name
+        table.sort(didNotRespond, function(a, b)
+            if (a.Class ~= b.Class) then
+                return a.Class < b.Class
+            end
+            return a.Name < b.Name
+        end)
+
+        -- sort offline by class, name
+        table.sort(offline, function(a, b)
+            if (a.Class ~= b.Class) then
+                return a.Class < b.Class
+            end
+            return a.Name < b.Name
+        end)
+
+        -- display DNR
         local numDNR = table.getn(didNotRespond)
         if (numDNR > 0) then
             local message = "\124cffff0000Did not respond to version check\124r ("..tostring(numDNR).."): "
             for i = 1, numDNR, 1 do
-                message = message..didNotRespond[i]
+                local player = didNotRespond[i]
+                message = message.."\124cff"..player.ClassColor..player.Name.."\124r"
                 if (i ~= numDNR) then
                     message = message..", "
                 end
@@ -1294,11 +1412,13 @@ local function HandleAddonVersionCheck()
             Print(message..".")
         end
 
+        -- display offline
         local numOffline = table.getn(offline)
         if (numOffline > 0) then
             local message = "\124cffaaaaaaOffline\124r ("..tostring(numOffline).."): "
             for i = 1, numOffline, 1 do
-                message = message..offline[i]
+                local player = offline[i]
+                message = message.."\124cff"..player.ClassColor..player.Name.."\124r"
                 if (i ~= numOffline) then
                     message = message..", "
                 end
@@ -1326,15 +1446,43 @@ local function HandleSuperWoWVersionCheck()
                 if (not versions[version]) then
                     versions[version] = {}
                 end
-                tinsert(versions[version], "\124cff"..GetClassColor(GetRaidUnit(sender))..sender.."\124r")
+
+                local unit = GetRaidUnit(sender)
+                local classColor = GetClassColor(unit)
+                local _, class = UnitClass(unit)
+                tinsert(versions[version], {
+                    Unit = unit,
+                    Class = class,
+                    ClassColor = classColor,
+                    Name = sender
+                })
             end
         end
 
-        for version, senders in versions do
+        local versionKeys = {}
+        for version in pairs(versions) do
+            tinsert(versionKeys, version)
+        end
+
+        table.sort(versionKeys, function(a, b)
+            return (tonumber(a) or 0) > (tonumber(b) or 0)
+        end)
+
+        for _, version in versionKeys do
+            local senders = versions[version]
+            -- sort by class, name
+            table.sort(senders, function(a, b)
+                if (a.Class ~= b.Class) then
+                    return a.Class < b.Class
+                end
+                return a.Name < b.Name
+            end)
+
             local numSenders = table.getn(senders)
-            local message = "SuperWoW version \124cffffff00"..tostring(version).."\124r ("..numSenders.."): "
+            local message = "SuperWoW version "..tostring(ColorVersion(version)).." ("..numSenders.."): "
             for i = 1, numSenders, 1 do
-                message = message..senders[i]
+                local sender = senders[i]
+                message = message.."\124cff"..sender.ClassColor..tostring(sender.Name).."\124r"
                 if (i ~= numSenders) then
                     message = message..", "
                 end
@@ -1357,19 +1505,50 @@ local function HandleSuperWoWVersionCheck()
                 end
             end
             if (not found) then
+                local classColor = GetClassColor(unit)
+                local _, class = UnitClass(unit)
+                
                 if (UnitIsConnected(unit)) then
-                    tinsert(didNotRespond, "\124cff"..GetClassColor(unit)..unitName.."\124r")
+                    tinsert(didNotRespond, {
+                        Unit = unit,
+                        Class = class,
+                        ClassColor = classColor,
+                        Name = unitName
+                    })
                 else
-                    tinsert(offline, "\124cff"..GetClassColor(unit)..unitName.."\124r")
+                    tinsert(offline, {
+                        Unit = unit,
+                        Class = class,
+                        ClassColor = classColor,
+                        Name = unitName
+                    })
                 end
             end
         end
 
+        -- sort DNR by class, name
+        table.sort(didNotRespond, function(a, b)
+            if (a.Class ~= b.Class) then
+                return a.Class < b.Class
+            end
+            return a.Name < b.Name
+        end)
+
+        -- sort offline by class, name
+        table.sort(offline, function(a, b)
+            if (a.Class ~= b.Class) then
+                return a.Class < b.Class
+            end
+            return a.Name < b.Name
+        end)
+
+        -- display DNR
         local numDNR = table.getn(didNotRespond)
         if (numDNR > 0) then
-            local message = "\124cffff0000Did not respond to SuperWoW version check\124r ("..tostring(numDNR).."): "
+            local message = "\124cffff0000Did not respond to version check\124r ("..tostring(numDNR).."): "
             for i = 1, numDNR, 1 do
-                message = message..didNotRespond[i]
+                local player = didNotRespond[i]
+                message = message.."\124cff"..player.ClassColor..player.Name.."\124r"
                 if (i ~= numDNR) then
                     message = message..", "
                 end
@@ -1377,11 +1556,13 @@ local function HandleSuperWoWVersionCheck()
             Print(message..".")
         end
 
+        -- display offline
         local numOffline = table.getn(offline)
         if (numOffline > 0) then
             local message = "\124cffaaaaaaOffline\124r ("..tostring(numOffline).."): "
             for i = 1, numOffline, 1 do
-                message = message..offline[i]
+                local player = offline[i]
+                message = message.."\124cff"..player.ClassColor..player.Name.."\124r"
                 if (i ~= numOffline) then
                     message = message..", "
                 end
@@ -1401,28 +1582,59 @@ end
 
 local function HandleSettingCheck()
     if (SettingCheckTimeLimit and (GetTime() > SettingCheckTimeLimit)) then
+        
         local values = {}
 
-        for sender, value in SettingCheckRepliers do
+        for sender, value in pairs(SettingCheckRepliers) do
             if (value and sender) then
                 if (not values[value]) then
                     values[value] = {}
                 end
-                tinsert(values[value], "\124cff"..GetClassColor(GetRaidUnit(sender))..sender.."\124r")
+
+                local unit = GetRaidUnit(sender)
+                local classColor = GetClassColor(unit)
+                local _, class = UnitClass(unit)
+                tinsert(values[value], {
+                    Unit = unit,
+                    Class = class,
+                    ClassColor = classColor,
+                    Name = sender
+                })
             end
         end
 
-        for value, senders in values do
-            local numSenders = table.getn(senders)
-            local message = "Setting \124cff00ff00"..tostring(SettingCheckSetting).."\124r = \124cffffff00"..tostring(value).."\124r ("..numSenders.."): "
-            for i = 1, numSenders, 1 do
-                message = message..senders[i]
-                if (i ~= numSenders) then
-                    message = message..", "
+        local valueKeys = {}
+        for value in pairs(values) do
+            tinsert(valueKeys, value)
+        end
+
+        table.sort(valueKeys, function(a, b)
+            return (tonumber(a) or 0) > (tonumber(b) or 0)
+        end)
+
+        for _, value in valueKeys do
+            local senders = values[value]
+            if (senders) then
+                -- sort by class, name
+                table.sort(senders, function(a, b)
+                    if (a.Class ~= b.Class) then
+                        return a.Class < b.Class
+                    end
+                    return a.Name < b.Name
+                end)
+
+                local numSenders = table.getn(senders)
+                local message = "Setting \124cff00ff00"..tostring(SettingCheckSetting).."\124r = \124cffffff00"..tostring(value).."\124r ("..numSenders.."): "
+                for i = 1, numSenders, 1 do
+                    local sender = senders[i]
+                    message = message.."\124cff"..sender.ClassColor..tostring(sender.Name).."\124r"
+                    if (i ~= numSenders) then
+                        message = message..", "
+                    end
                 end
+                message = message.."."
+                Print(message)
             end
-            message = message.."."
-            Print(message)
         end
 
         local didNotRespond = {}
@@ -1432,26 +1644,57 @@ local function HandleSettingCheck()
             local unit = "RAID"..i
             local unitName = UnitName(unit)
             local found = false
-            for sender, value in SettingCheckRepliers do
+            for sender, version in SettingCheckRepliers do
                 if (sender == unitName) then
                     found = true
                     break
                 end
             end
             if (not found) then
+                local classColor = GetClassColor(unit)
+                local _, class = UnitClass(unit)
+                
                 if (UnitIsConnected(unit)) then
-                    tinsert(didNotRespond, "\124cff"..GetClassColor(unit)..unitName.."\124r")
+                    tinsert(didNotRespond, {
+                        Unit = unit,
+                        Class = class,
+                        ClassColor = classColor,
+                        Name = unitName
+                    })
                 else
-                    tinsert(offline, "\124cff"..GetClassColor(unit)..unitName.."\124r")
+                    tinsert(offline, {
+                        Unit = unit,
+                        Class = class,
+                        ClassColor = classColor,
+                        Name = unitName
+                    })
                 end
             end
         end
 
+        -- sort DNR by class, name
+        table.sort(didNotRespond, function(a, b)
+            if (a.Class ~= b.Class) then
+                return a.Class < b.Class
+            end
+            return a.Name < b.Name
+        end)
+
+        -- sort offline by class, name
+        table.sort(offline, function(a, b)
+            if (a.Class ~= b.Class) then
+                return a.Class < b.Class
+            end
+            return a.Name < b.Name
+        end)
+
+        -- display DNR
         local numDNR = table.getn(didNotRespond)
         if (numDNR > 0) then
-            local message = "\124cffff0000Did not respond to setting check\124r ("..tostring(numDNR).."): "
+            local message = "\124cffff0000Did not respond to version check\124r ("..tostring(numDNR).."): "
             for i = 1, numDNR, 1 do
-                message = message..didNotRespond[i]
+                local player = didNotRespond[i]
+                message = message.."\124cff"..player.ClassColor..player.Name.."\124r"
                 if (i ~= numDNR) then
                     message = message..", "
                 end
@@ -1459,11 +1702,13 @@ local function HandleSettingCheck()
             Print(message..".")
         end
 
+        -- display offline
         local numOffline = table.getn(offline)
         if (numOffline > 0) then
             local message = "\124cffaaaaaaOffline\124r ("..tostring(numOffline).."): "
             for i = 1, numOffline, 1 do
-                message = message..offline[i]
+                local player = offline[i]
+                message = message.."\124cff"..player.ClassColor..player.Name.."\124r"
                 if (i ~= numOffline) then
                     message = message..", "
                 end
@@ -1594,20 +1839,20 @@ local function CmdLoginInfo(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.LOGIN_INFO = true
-        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(true)
         Print("Login info \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(true)
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.LOGIN_INFO = false
-        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(false)
         Print("Login info \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(false)
     elseif (METHWHEELCHAIR_CONFIG.LOGIN_INFO == true) then
         METHWHEELCHAIR_CONFIG.LOGIN_INFO = false
-        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(false)
         Print("Login info \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(false)
     else
         METHWHEELCHAIR_CONFIG.LOGIN_INFO = true
-        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(true)
         Print("Login info \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(true)
     end
 
     return true
@@ -1620,21 +1865,21 @@ local function CmdLMB(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.BLOCK_LMB = true
-        MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(true)
         Print("Blocking Left Mouse button is now \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(true)
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.BLOCK_LMB = false
-        MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(false)
         Print("Blocking Left Mouse button is now \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(false)
     else
         if (METHWHEELCHAIR_CONFIG.BLOCK_LMB == true) then
             METHWHEELCHAIR_CONFIG.BLOCK_LMB = false
-            MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(false)
             Print("Blocking Left Mouse button is now \124cffff0000disabled\124r.")
+            MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(false)
         else
             METHWHEELCHAIR_CONFIG.BLOCK_LMB = true
-            MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(true)
             Print("Blocking Left Mouse button is now \124cff00ff00enabled\124r.")
+            MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(true)
         end
     end
 
@@ -1648,21 +1893,21 @@ local function CmdMMB(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = true
-        MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(true)
         Print("Mutual Mouse Button blocking is now \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(true)
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = false
-        MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(false)
         Print("Mutual Mouse Button blocking is now \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(false)
     else
         if (METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK == true) then
             METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = false
-            MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(false)
             Print("Mutual Mouse Button blocking is now \124cffff0000disabled\124r.")
+            MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(false)
         else
             METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK = true
-            MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(true)
             Print("Mutual Mouse Button blocking is now \124cff00ff00enabled\124r.")
+            MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(true)
         end
     end
 
@@ -1676,14 +1921,28 @@ local function CmdEarlyUnbind(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.EARLY_UNBIND = true
-        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(true)
         Print("Early Unbind is now \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(true)
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.EARLY_UNBIND = false
-        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(false)
         Print("Early Unbind is now \124cffff0000disabled\124r.")
-    elseif (tonumber(args[2])) then
+        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(false)
+    elseif (args[2] and args[2] ~= "") then
         local value = tonumber(args[2])
+
+        if (not value) then
+            Print("\124cffff0000Early Unbind value must be a number.\124r")
+            return true
+        end
+
+        if (value > ShackleCastDuration) then
+            value = ShackleCastDuration
+        end
+        
+        if (value < 0) then
+            value = 0
+        end
+
         METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE = value
         Print("Early Unbind value is now set to \124cffffff00"..string.format("%.2f", value).."\124r.")
         MethWheelchair_MainFrame_Options_UnbindBeforeShackle_Slider:SetValue(value * 1000)
@@ -1692,39 +1951,39 @@ local function CmdEarlyUnbind(msg)
     elseif (METHWHEELCHAIR_CONFIG.EARLY_UNBIND == true) then
         -- disable
         METHWHEELCHAIR_CONFIG.EARLY_UNBIND = false
-        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(false)
         Print("Early Unbind is now \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(false)
     else
         -- enable
         METHWHEELCHAIR_CONFIG.EARLY_UNBIND = true
-        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(true)
         Print("Early Unbind is now \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(true)
     end
 
     return true
 end
 
 local function CmdFullScreenEffect(msg)
-    local cmd = { "fse", "fullscreeneffect" }
+    local cmd = { "fs", "fse", "fullscreen", "fullscreeneffect" }
     local args = MsgArgs(msg, 2)
     if (not IsCmd(cmd, args[1])) then return false end
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = true
-        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(true)
         Print("Full-Screen Effect is now \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(true)
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = false
-        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(false)
         Print("Full-Screen Effect is now \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(false)
     elseif (METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT == true) then
         METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = false
-        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(false)
         Print("Full-Screen Effect is now \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(false)
     else
         METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = true
-        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(true)
         Print("Full-Screen Effect is now \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(true)
     end
 
     return true
@@ -1737,20 +1996,20 @@ local function CmdAutorun(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = true
-        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(true)
         Print("Unbinding autorun on Meth platform is now \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(true)
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = false
-        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(false)
         Print("Unbinding autorun on Meth platform is now \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(false)
     elseif (METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE == true) then
         METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = false
-        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(false)
         Print("Unbinding autorun on Meth platform is now \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(false)
     else
         METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE = true
-        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(true)
         Print("Unbinding autorun on Meth platform is now \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(true)
     end
 
     UpdateAutorunKeybind()
@@ -1765,20 +2024,20 @@ local function CmdJump(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = true
-        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(true)
         Print("Unbinding jump on Meth platform is now \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(true)
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = false
-        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(false)
         Print("Unbinding jump on Meth platform is now \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(false)
     elseif (METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE == true) then
         METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = false
-        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(false)
         Print("Unbinding jump on Meth platform is now \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(false)
     else
         METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE = true
-        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(true)
         Print("Unbinding jump on Meth platform is now \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(true)
     end
 
     UpdateJumpKeybind()
@@ -1811,6 +2070,30 @@ local function CmdSuperWoW(msg)
         EventFrame:RegisterEvent("UNIT_CASTEVENT")
     else
         EventFrame:UnregisterEvent("UNIT_CASTEVENT")
+    end
+
+    return true
+end
+
+local function CmdGuilty(msg)
+    local cmd = { "guilty" }
+    local args = MsgArgs(msg, 2)
+    if (not IsCmd(cmd, args[1])) then return false end
+
+    if (args[2] == "enable") then
+        METHWHEELCHAIR_CONFIG.SHOW_GUILTY = true
+        Print("Shackle shatter notifications are now \124cff00ff00enabled\124r.")
+    elseif (args[2] == "disable") then
+        METHWHEELCHAIR_CONFIG.SHOW_GUILTY = false
+        Print("Shackle shatter notifications are now \124cffff0000disabled\124r.")
+    else
+        if (METHWHEELCHAIR_CONFIG.SHOW_GUILTY) then
+            METHWHEELCHAIR_CONFIG.SHOW_GUILTY = false
+            Print("Shackle shatter notifications are now \124cffff0000disabled\124r.")
+        else
+            METHWHEELCHAIR_CONFIG.SHOW_GUILTY = true
+            Print("Shackle shatter notifications are now \124cff00ff00enabled\124r.")
+        end
     end
 
     return true
@@ -2046,6 +2329,7 @@ SlashCmdList["METHWHEELCHAIR"] = function(msg)
     if (CmdResetTrackersTotal(msg)) then return end
     
     if (CmdSuperWoW(msg)) then return end
+    if (CmdGuilty(msg)) then return end
     if (CmdReload(msg)) then return end
     if (CmdFullTest(msg)) then return end
 
