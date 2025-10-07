@@ -591,4 +591,75 @@
 
         
     </Frame>
+
+
+    <Button name="MethWheelchair_MinimapButton" movable="true" parent="Minimap" enableMouse="true" toplevel="true">
+        <Size x="33" y="33"/>
+        <Anchors>
+            <Anchor point="CENTER" relativeTo="UIParent" relativePoint="CENTER"/>
+        </Anchors>
+        <Layers>
+            <Layer level="BACKGROUND">
+                <Texture file="Interface\Icons\INV_Belt_18">
+                    <Size x="21" y="21"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT">
+                            <Offset x="7" y="-6"/>
+                        </Anchor>
+                    </Anchors>
+                    <TexCoords left="0.075" right="0.925" top="0.075" bottom="0.925"/>
+                </Texture>
+            </Layer>
+            <Layer level="OVERLAY">
+                <Texture file="Interface\Minimap\MiniMap-TrackingBorder">
+                    <Size x="56" y="56"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT"/>
+                    </Anchors>
+                </Texture>
+            </Layer>
+        </Layers>
+        <HighlightTexture alphaMode="ADD" file="Interface\Minimap\UI-Minimap-ZoomButton-Highlight"/>
+        <Scripts>
+            <OnLoad>
+                this:RegisterForDrag("LeftButton")
+                this:SetClampedToScreen(true)
+                this:RegisterEvent("PLAYER_LOGIN")
+            </OnLoad>
+            <OnDragStart>
+                this:LockHighlight()
+                if (this:IsMovable()) then
+                    this:StartMoving()
+                end
+            </OnDragStart>
+            <OnDragStop>
+                this:UnlockHighlight()
+                if (this:IsMovable()) then
+                    this:StopMovingOrSizing()
+                    METHWHEELCHAIR_CONFIG.MINIMAP_POSITION = {this:GetCenter()}
+                end
+            </OnDragStop>
+            <OnEnter>
+                GameTooltip:SetOwner(this, "ANCHOR_TOPLEFT", 0, 0)
+                GameTooltip:AddLine("MethWheelchair " .. MethWheelchair.GetAddonVersion(), 1, 1, 1)
+                GameTooltip:AddLine("Left-click to toggle UI\nHold Left-click and drag to move this button")
+                GameTooltip:Show()
+            </OnEnter>
+            <OnLeave>
+                GameTooltip:Hide()
+            </OnLeave>
+            <OnMouseUp>
+                if (arg1 == "LeftButton") then
+                    MethWheelchair.ToggleUI()
+                end
+            </OnMouseUp>
+            <OnEvent>
+                if (event == "PLAYER_LOGIN") then
+                    this:ClearAllPoints()
+                    this:SetPoint("CENTER", UIParent, "BOTTOMLEFT", unpack(METHWHEELCHAIR_CONFIG.MINIMAP_POSITION or {this:GetCenter()}))
+                end
+            </OnEvent>
+        </Scripts>
+    </Button>
+
 </Ui>

@@ -37,7 +37,7 @@ local CONFIG_DEFAULT_VALUE = {
     -- unbind keybind earlier by (ShackleCastDuration - EARLY_UNBIND_VALUE)
     EARLY_UNBIND = false,
     -- time value in ms
-    EARLY_UNBIND_VALUE = 1500,
+    EARLY_UNBIND_VALUE = 1000,
 
     -- display who shattered shackles
     SHOW_GUILTY = false,
@@ -100,6 +100,7 @@ local SettingKeys = {
 
 
 local FullScreenEffect = nil
+local FullScreenEffectAlpha = 0.5
 local TestInProgress = false
 local ShouldUnbind = false
 local Unbound = false
@@ -382,7 +383,10 @@ local function InitUIConfig()
     
     MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(METHWHEELCHAIR_CONFIG.BLOCK_LMB)
 
-    MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK) 
+    MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK)
+
+    MethWheelchair_MinimapButton:ClearAllPoints()
+	MethWheelchair_MinimapButton:SetPoint("CENTER", UIParent, "BOTTOMLEFT", unpack(METHWHEELCHAIR_CONFIG.MINIMAP_POSITION or {MethWheelchair_MinimapButton:GetCenter()}))
 end
 
 
@@ -400,7 +404,7 @@ local function InitFullScreenEffect()
         FullScreenEffect:Hide()
 
         local texture = FullScreenEffect:CreateTexture()
-        texture:SetTexture(0.0, 0.0, 0.0, 0.5)
+        texture:SetTexture(0.0, 0.0, 0.0, FullScreenEffectAlpha)
         texture:SetWidth(width)
         texture:SetHeight(height)
         texture:SetPoint("CENTER", 0, 0)
@@ -418,7 +422,7 @@ local function InitFullScreenEffect()
         
         function FullScreenEffect:Begin(endTime)
             self.EndTime = endTime
-            self.Texture:SetTexture(0.0, 0.0, 0.0, 0.5)
+            self.Texture:SetTexture(0.0, 0.0, 0.0, FullScreenEffectAlpha)
             self.Text:SetText("!!! DO NOT MOVE !!!")
             self.Text:SetTextColor(1.0, 0.0, 0.0, 1.0)
             self:Show()
@@ -1545,7 +1549,7 @@ local function HandleSuperWoWVersionCheck()
         -- display DNR
         local numDNR = table.getn(didNotRespond)
         if (numDNR > 0) then
-            local message = "\124cffff0000Did not respond to version check\124r ("..tostring(numDNR).."): "
+            local message = "\124cffff0000Did not respond to SuperWoW version check\124r ("..tostring(numDNR).."): "
             for i = 1, numDNR, 1 do
                 local player = didNotRespond[i]
                 message = message.."\124cff"..player.ClassColor..player.Name.."\124r"
@@ -1691,7 +1695,7 @@ local function HandleSettingCheck()
         -- display DNR
         local numDNR = table.getn(didNotRespond)
         if (numDNR > 0) then
-            local message = "\124cffff0000Did not respond to version check\124r ("..tostring(numDNR).."): "
+            local message = "\124cffff0000Did not respond to setting check\124r ("..tostring(numDNR).."): "
             for i = 1, numDNR, 1 do
                 local player = didNotRespond[i]
                 message = message.."\124cff"..player.ClassColor..player.Name.."\124r"

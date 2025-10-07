@@ -2,8 +2,11 @@
 
 Disables movement keybinds after standing still for at least one frame after Mephistroth finishes casting Shackles of the Legion.<br>
 After debuff is gone or after 6.5 secs of cast event re-enables keybinds.<br>
-Hitting movement keybinds during that time will cancel spell casts.
+Hitting movement keybinds during that time will cancel spell casts.<br>
 
+Click minimap button or type ``/mw`` to open configuration panel.<br>
+
+## Commands
 
 Use ``/mw`` to toggle UI.<br>
 Use ``/mw restore`` to forcefully restore your keybinds.<br>
@@ -19,7 +22,7 @@ Use ``/mw eub`` to toggle unbinding keybinds before shackle cast finishes depend
 Use ``/mw eub <number_value>`` to set early unbind value (replace ``<number_value>`` with number between 0.0 and 3.0).<br>
 
 
-## Known issues:
+## Known issues
 
 - Requires player to manually stop moving before Shackles of the Legion cast finishes.
 
@@ -29,14 +32,14 @@ Use ``/mw eub <number_value>`` to set early unbind value (replace ``<number_valu
 
 - During Shackle there is only one mouse button pressed at a time allowed. This will fail if both mouse buttons trigger MouseDown event during same frame. This shouldn't be an issue for SuperWoW users, due to solution in section above, but will result in Shackle Shatter in case of non-SuperWoW user.
 
-- Another way to Shatter Shackle:
-    1. Press Right Mouse Button
-    2. Press Left Mouse Button
-    3. Get Shackle debuff
-    4. Press S
-    5. Stop moving - trigger unbind
-    6. Release both mouse buttons 
-    7. Start walking backwards 
-    8. Release S
-    9. Continue walking backwards
-    *Replace S with A or D to spin instead of walking backwards (not shattering shackle)*
+- Another way to Shatter Shackle:<br>
+    **1.** Press Right Mouse Button<br>
+    **2.** Press Left Mouse Button<br>
+    **3.** Get Shackle debuff<br>
+    **4.** Press S<br>
+    **5.** Stop moving - trigger unbind<br>
+    **6.** Release both mouse buttons<br>
+    **7.** Start walking backwards<br>
+    **8.** Release S<br>
+    **9.** Continue walking backwards<br>
+    *Replace S with A or D to spin instead of walking backwards (not shattering shackle)*<br>
