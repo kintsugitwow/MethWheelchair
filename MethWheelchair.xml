@@ -82,7 +82,7 @@
                 </FontString>
 
                 <!-- TOP LEFT CHAIN -->
-                <Texture name="$parent_CornerTopLeft" file="Interface\AddOns\MethWheelchair\CornerTopLeft.tga">
+                <Texture name="$parent_CornerTopLeft" file="Interface\AddOns\MethWheelchair\Resources\CornerTopLeft.tga">
                     <Size>
                         <AbsDimension x="56" y="56"/>
                     </Size>
@@ -96,7 +96,7 @@
                 </Texture>
 
                 <!-- TOP RIGHT CHAIN -->
-                <Texture name="$parent_CornerTopRight" file="Interface\AddOns\MethWheelchair\CornerTopRight.tga">
+                <Texture name="$parent_CornerTopRight" file="Interface\AddOns\MethWheelchair\Resources\CornerTopRight.tga">
                     <Size>
                         <AbsDimension x="56" y="56"/>
                     </Size>
@@ -110,7 +110,7 @@
                 </Texture>
 
                 <!-- BOTTOM RIGHT CHAIN -->
-                <Texture name="$parent_CornerBottomRight" file="Interface\AddOns\MethWheelchair\CornerBottomRight.tga">
+                <Texture name="$parent_CornerBottomRight" file="Interface\AddOns\MethWheelchair\Resources\CornerBottomRight.tga">
                     <Size>
                         <AbsDimension x="56" y="56"/>
                     </Size>
@@ -124,7 +124,7 @@
                 </Texture>
 
                 <!-- BOTTOM LEFT CHAIN -->
-                <Texture name="$parent_CornerBottomLeft" file="Interface\AddOns\MethWheelchair\CornerBottomLeft.tga">
+                <Texture name="$parent_CornerBottomLeft" file="Interface\AddOns\MethWheelchair\Resources\CornerBottomLeft.tga">
                     <Size>
                         <AbsDimension x="56" y="56"/>
                     </Size>
