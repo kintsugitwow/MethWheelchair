@@ -33,6 +33,7 @@ local CONFIG_DEFAULT_VALUE = {
     -- only during Shackle cast and for 0.5 sec after Shackle debuff is gone
     -- if debuff is not applied, hide after 0.5 sec
     FULLSCREENEFFECT = true,
+    --FULLSCREENEFFECT_DARKNESSLEVEL = 500,
 
     -- unbind keybind earlier by (ShackleCastDuration - EARLY_UNBIND_VALUE)
     EARLY_UNBIND = false,
@@ -49,6 +50,14 @@ local CONFIG_DEFAULT_VALUE = {
     TOTAL_TRIGGER_COUNT = 0,
     TOTAL_MAP_POSITION_FAILS = 0,
     TOTAL_MAP_POSITION_CRITICAL_FAILS = 0,
+
+    -- unbinding keybind by zone and logging out in that zone results in keybind being permamently unbound
+    -- we have catch unbinds in such way and restore them on next login (PLAYER_ENTERING_WORLD)
+    -- stored values are intended keybinds
+    REBIND_AUTORUN_ON_NEXT_LOGIN_1 = nil,
+    REBIND_AUTORUN_ON_NEXT_LOGIN_2 = nil,
+    REBIND_JUMP_ON_NEXT_LOGIN_1 = nil,
+    REBIND_JUMP_ON_NEXT_LOGIN_2 = nil,
 }
 
 -- assign default values on VARIABLES_LOADED event if nil
@@ -100,7 +109,7 @@ local SettingKeys = {
 
 
 local FullScreenEffect = nil
-local FullScreenEffectAlpha = 0.5
+local FullScreenEffectDefaultDarknessLevel = 0.5
 local TestInProgress = false
 local ShouldUnbind = false
 local Unbound = false
@@ -117,7 +126,8 @@ local ShackleCastDuration = 3.0
 
 -- on combat log aura change
 local ShackleSpellNameTriggers = {
-    "Shackles of the Legion",
+    "Shackles of the Legion", -- Mephistroth
+    "Enveloped Flames", -- Lingering Magus
 }
 
 -- on UNIT_CASTEVENT
@@ -232,6 +242,23 @@ local old_CameraOrSelectOrMoveStart = CameraOrSelectOrMoveStart
 
 local strfind = string.find
 local strlower = string.lower
+local strformat = string.format
+local tostring = tostring
+local tonumber = tonumber
+local tinsert = table.insert
+local tsort = table.sort
+local tgetn = table.getn
+local pairs = pairs
+local ipairs = ipairs
+local UnitBuff = UnitBuff
+local UnitDebuff = UnitDebuff
+local UnitClass = UnitClass
+local UnitName = UnitName
+local GetTime = GetTime
+local SetBinding = SetBinding
+local GetBindingKey = GetBindingKey
+local GetZoneText = GetZoneText
+local GetSubZoneText = GetSubZoneText
 
 
 
@@ -248,6 +275,12 @@ local function GetAddonVersion()
     return nil
 end
 MethWheelchair.GetAddonVersion = GetAddonVersion
+
+
+local function GetAddonVersionStr()
+    return strformat("%.2f", tostring(GetAddonVersion()))
+end
+MethWheelchair.GetAddonVersionStr = GetAddonVersionStr
 
 
 local function GetClassColor(unit)
@@ -370,23 +403,55 @@ end
 
 
 local function InitUIConfig()
-    MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(METHWHEELCHAIR_CONFIG.LOGIN_INFO)
+    if (MethWheelchair_MainFrame_Options_ShowLoginInfo) then
+        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(METHWHEELCHAIR_CONFIG.LOGIN_INFO)
+    end
 
-    MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT)
+    if (MethWheelchair_MainFrame_Options_EnableFullScreenEffect) then
+        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT)
+        if (MethWheelchair_MainFrame_Options_EnableFullScreenEffect_Slider) then
+            MethWheelchair_MainFrame_Options_EnableFullScreenEffect_Slider:SetValue(METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT_DARKNESSLEVEL)
+        end
+    end
 
-    MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE)
+    if (MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone) then
+        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE)
+    end
 
-    MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE)
+    if (MethWheelchair_MainFrame_Options_UnbindJumpBySubZone) then
+        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE)
+    end
 
-    MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(METHWHEELCHAIR_CONFIG.EARLY_UNBIND)
-    MethWheelchair_MainFrame_Options_UnbindBeforeShackle_Slider:SetValue(METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE)
+    if (MethWheelchair_MainFrame_Options_UnbindBeforeShackle) then
+        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(METHWHEELCHAIR_CONFIG.EARLY_UNBIND)
+        if (MethWheelchair_MainFrame_Options_UnbindBeforeShackle_Slider) then
+            MethWheelchair_MainFrame_Options_UnbindBeforeShackle_Slider:SetValue(METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE)
+        end
+    end
     
-    MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(METHWHEELCHAIR_CONFIG.BLOCK_LMB)
+    if (MethWheelchair_MainFrame_Options_BlockLeftMouseButton) then
+        MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(METHWHEELCHAIR_CONFIG.BLOCK_LMB)
+    end
 
-    MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK)
+    if (MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime) then
+        MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK)
+    end
 
-    MethWheelchair_MinimapButton:ClearAllPoints()
-	MethWheelchair_MinimapButton:SetPoint("CENTER", UIParent, "BOTTOMLEFT", unpack(METHWHEELCHAIR_CONFIG.MINIMAP_POSITION or {MethWheelchair_MinimapButton:GetCenter()}))
+    if (MethWheelchair_MinimapButton) then
+        MethWheelchair_MinimapButton:ClearAllPoints()
+	    MethWheelchair_MinimapButton:SetPoint("CENTER", UIParent, "BOTTOMLEFT",
+            unpack(METHWHEELCHAIR_CONFIG.MINIMAP_POSITION or {MethWheelchair_MinimapButton:GetCenter()})
+        )
+    end
+end
+
+
+local function GetFullScreenEffectDarknessLevel()
+    if (METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT_DARKNESSLEVEL) then
+        return METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT_DARKNESSLEVEL / 1000
+    else
+        return FullScreenEffectDefaultDarknessLevel
+    end
 end
 
 
@@ -404,7 +469,7 @@ local function InitFullScreenEffect()
         FullScreenEffect:Hide()
 
         local texture = FullScreenEffect:CreateTexture()
-        texture:SetTexture(0.0, 0.0, 0.0, FullScreenEffectAlpha)
+        texture:SetTexture(0.0, 0.0, 0.0, GetFullScreenEffectDarknessLevel())
         texture:SetWidth(width)
         texture:SetHeight(height)
         texture:SetPoint("CENTER", 0, 0)
@@ -422,7 +487,7 @@ local function InitFullScreenEffect()
         
         function FullScreenEffect:Begin(endTime)
             self.EndTime = endTime
-            self.Texture:SetTexture(0.0, 0.0, 0.0, FullScreenEffectAlpha)
+            self.Texture:SetTexture(0.0, 0.0, 0.0, GetFullScreenEffectDarknessLevel())
             self.Text:SetText("!!! DO NOT MOVE !!!")
             self.Text:SetTextColor(1.0, 0.0, 0.0, 1.0)
             self:Show()
@@ -483,6 +548,8 @@ local function InitFullScreenEffect()
                 end
             end
         end)
+
+        MethWheelchair.FullScreenEffect = FullScreenEffect
     end
 end
 
@@ -519,7 +586,7 @@ end
 
 
 local function PrintVersion()
-    Print("Version: "..tostring(GetAddonVersion()))
+    Print("Version: "..tostring(GetAddonVersionStr()))
 end
 
 
@@ -666,6 +733,20 @@ local function RestoreKeybinds()
 end
 
 
+-- restore after logging out in unbind zone
+local function RebindAutorunKeybind()
+    local key1, key2 = GetBindingKey(AUTORUN_ACTION)
+    if (not key1 and METHWHEELCHAIR_CONFIG.REBIND_AUTORUN_ON_NEXT_LOGIN_1) then
+        SetBinding(METHWHEELCHAIR_CONFIG.REBIND_AUTORUN_ON_NEXT_LOGIN_1, AUTORUN_ACTION)
+        METHWHEELCHAIR_CONFIG.REBIND_AUTORUN_ON_NEXT_LOGIN_1 = nil
+    end
+    if (not key2 and METHWHEELCHAIR_CONFIG.REBIND_AUTORUN_ON_NEXT_LOGIN_2) then
+        SetBinding(METHWHEELCHAIR_CONFIG.REBIND_AUTORUN_ON_NEXT_LOGIN_2, AUTORUN_ACTION)
+        METHWHEELCHAIR_CONFIG.REBIND_AUTORUN_ON_NEXT_LOGIN_2 = nil
+    end
+end
+
+
 local function UpdateAutorunKeybind(forceSubZone)
     if (METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE
         and (IsNoAutorunSubZone(GetSubZoneText()) or forceSubZone)
@@ -675,6 +756,7 @@ local function UpdateAutorunKeybind(forceSubZone)
         for _, keybind in AutorunKeybinds do
             if (keybind) then
                 SetBinding(keybind, "METHWHEELCHAIR_REPLACEMENT_ACTION_AUTORUN"..tostring(replacementActionId))
+                METHWHEELCHAIR_CONFIG["REBIND_AUTORUN_ON_NEXT_LOGIN_"..replacementActionId] = keybind
                 replacementActionId = replacementActionId + 1
             end
         end
@@ -692,6 +774,20 @@ end
 MethWheelchair.UpdateAutorunKeybind = UpdateAutorunKeybind
 
 
+-- restore after logging out in unbind zone
+local function RebindJumpKeybind()
+    local key1, key2 = GetBindingKey(JUMP_ACTION)
+    if (not key1 and METHWHEELCHAIR_CONFIG.REBIND_JUMP_ON_NEXT_LOGIN_1) then
+        SetBinding(METHWHEELCHAIR_CONFIG.REBIND_JUMP_ON_NEXT_LOGIN_1, JUMP_ACTION)
+        METHWHEELCHAIR_CONFIG.REBIND_JUMP_ON_NEXT_LOGIN_1 = nil
+    end
+    if (not key2 and METHWHEELCHAIR_CONFIG.REBIND_JUMP_ON_NEXT_LOGIN_2) then
+        SetBinding(METHWHEELCHAIR_CONFIG.REBIND_JUMP_ON_NEXT_LOGIN_2, JUMP_ACTION)
+        METHWHEELCHAIR_CONFIG.REBIND_JUMP_ON_NEXT_LOGIN_2 = nil
+    end
+end
+
+
 local function UpdateJumpKeybind(forceSubZone)
     if (METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE
         and (IsNoJumpSubZone(GetSubZoneText()) or forceSubZone)
@@ -701,6 +797,7 @@ local function UpdateJumpKeybind(forceSubZone)
         for _, keybind in JumpKeybinds do
             if (keybind) then
                 SetBinding(keybind, "METHWHEELCHAIR_REPLACEMENT_ACTION_JUMP"..tostring(replacementActionId))
+                METHWHEELCHAIR_CONFIG["REBIND_JUMP_ON_NEXT_LOGIN_"..replacementActionId] = keybind
                 replacementActionId = replacementActionId + 1
             end
         end
@@ -948,6 +1045,9 @@ function()
         end
 
         HookMouseEvents()
+
+        RebindAutorunKeybind()
+        RebindJumpKeybind()
     end
 
     UpdateAutorunKeybind()
@@ -963,6 +1063,20 @@ function()
 end)
 
 
+-- CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE
+RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE",
+function()
+    for _, spell in ShackleSpellNameTriggers do
+        if (
+            strfind(arg1, "You are afflicted by "..spell) or
+            strfind(arg1, UnitName("PLAYER").." is afflicted by "..spell)
+        ) then
+            MethWheelchair.Unbind(0)
+        end
+    end
+end)
+
+
 -- CHAT_MSG_SPELL_AURA_GONE_SELF
 RegisterEvent("CHAT_MSG_SPELL_AURA_GONE_SELF",
 function()
@@ -973,20 +1087,6 @@ function()
         ) then
             MethWheelchair.Restore()
             Print("Movement \124cff00ff00restored\124r.")
-        end
-    end
-end)
-
-
--- CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE
-RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE",
-function()
-    for _, spell in ShackleSpellNameTriggers do
-        if (
-            strfind(arg1, "You are afflicted by "..spell) or
-            strfind(arg1, UnitName("PLAYER").." is afflicted by "..spell)
-        ) then
-            MethWheelchair.Unbind(0)
         end
     end
 end)
@@ -1067,7 +1167,7 @@ function()
             if (args[3] == "version") then
                 local requester = args[2]
                 local name = UnitName("PLAYER")
-                local version = tostring(GetAddonVersion())
+                local version = GetAddonVersionStr()
 
                 local msg = "answer;"..requester..";version;"..name..";"..version..";"
                 SendAddonMessage(ADDON_PREFIX, msg, "RAID")
@@ -1324,21 +1424,21 @@ local function HandleAddonVersionCheck()
             tinsert(versionKeys, version)
         end
 
-        table.sort(versionKeys, function(a, b)
+        tsort(versionKeys, function(a, b)
             return (tonumber(a) or 0) > (tonumber(b) or 0)
         end)
 
         for _, version in versionKeys do
             local senders = versions[version]
             -- sort by class, name
-            table.sort(senders, function(a, b)
+            tsort(senders, function(a, b)
                 if (a.Class ~= b.Class) then
                     return a.Class < b.Class
                 end
                 return a.Name < b.Name
             end)
 
-            local numSenders = table.getn(senders)
+            local numSenders = tgetn(senders)
             local message = "Version "..tostring(ColorVersion(version)).." ("..numSenders.."): "
             for i = 1, numSenders, 1 do
                 local sender = senders[i]
@@ -1387,7 +1487,7 @@ local function HandleAddonVersionCheck()
         end
 
         -- sort DNR by class, name
-        table.sort(didNotRespond, function(a, b)
+        tsort(didNotRespond, function(a, b)
             if (a.Class ~= b.Class) then
                 return a.Class < b.Class
             end
@@ -1395,7 +1495,7 @@ local function HandleAddonVersionCheck()
         end)
 
         -- sort offline by class, name
-        table.sort(offline, function(a, b)
+        tsort(offline, function(a, b)
             if (a.Class ~= b.Class) then
                 return a.Class < b.Class
             end
@@ -1403,7 +1503,7 @@ local function HandleAddonVersionCheck()
         end)
 
         -- display DNR
-        local numDNR = table.getn(didNotRespond)
+        local numDNR = tgetn(didNotRespond)
         if (numDNR > 0) then
             local message = "\124cffff0000Did not respond to version check\124r ("..tostring(numDNR).."): "
             for i = 1, numDNR, 1 do
@@ -1417,7 +1517,7 @@ local function HandleAddonVersionCheck()
         end
 
         -- display offline
-        local numOffline = table.getn(offline)
+        local numOffline = tgetn(offline)
         if (numOffline > 0) then
             local message = "\124cffaaaaaaOffline\124r ("..tostring(numOffline).."): "
             for i = 1, numOffline, 1 do
@@ -1468,21 +1568,21 @@ local function HandleSuperWoWVersionCheck()
             tinsert(versionKeys, version)
         end
 
-        table.sort(versionKeys, function(a, b)
+        tsort(versionKeys, function(a, b)
             return (tonumber(a) or 0) > (tonumber(b) or 0)
         end)
 
         for _, version in versionKeys do
             local senders = versions[version]
             -- sort by class, name
-            table.sort(senders, function(a, b)
+            tsort(senders, function(a, b)
                 if (a.Class ~= b.Class) then
                     return a.Class < b.Class
                 end
                 return a.Name < b.Name
             end)
 
-            local numSenders = table.getn(senders)
+            local numSenders = tgetn(senders)
             local message = "SuperWoW version "..tostring(ColorVersion(version)).." ("..numSenders.."): "
             for i = 1, numSenders, 1 do
                 local sender = senders[i]
@@ -1531,7 +1631,7 @@ local function HandleSuperWoWVersionCheck()
         end
 
         -- sort DNR by class, name
-        table.sort(didNotRespond, function(a, b)
+        tsort(didNotRespond, function(a, b)
             if (a.Class ~= b.Class) then
                 return a.Class < b.Class
             end
@@ -1539,7 +1639,7 @@ local function HandleSuperWoWVersionCheck()
         end)
 
         -- sort offline by class, name
-        table.sort(offline, function(a, b)
+        tsort(offline, function(a, b)
             if (a.Class ~= b.Class) then
                 return a.Class < b.Class
             end
@@ -1547,7 +1647,7 @@ local function HandleSuperWoWVersionCheck()
         end)
 
         -- display DNR
-        local numDNR = table.getn(didNotRespond)
+        local numDNR = tgetn(didNotRespond)
         if (numDNR > 0) then
             local message = "\124cffff0000Did not respond to SuperWoW version check\124r ("..tostring(numDNR).."): "
             for i = 1, numDNR, 1 do
@@ -1561,7 +1661,7 @@ local function HandleSuperWoWVersionCheck()
         end
 
         -- display offline
-        local numOffline = table.getn(offline)
+        local numOffline = tgetn(offline)
         if (numOffline > 0) then
             local message = "\124cffaaaaaaOffline\124r ("..tostring(numOffline).."): "
             for i = 1, numOffline, 1 do
@@ -1612,7 +1712,7 @@ local function HandleSettingCheck()
             tinsert(valueKeys, value)
         end
 
-        table.sort(valueKeys, function(a, b)
+        tsort(valueKeys, function(a, b)
             return (tonumber(a) or 0) > (tonumber(b) or 0)
         end)
 
@@ -1620,14 +1720,14 @@ local function HandleSettingCheck()
             local senders = values[value]
             if (senders) then
                 -- sort by class, name
-                table.sort(senders, function(a, b)
+                tsort(senders, function(a, b)
                     if (a.Class ~= b.Class) then
                         return a.Class < b.Class
                     end
                     return a.Name < b.Name
                 end)
 
-                local numSenders = table.getn(senders)
+                local numSenders = tgetn(senders)
                 local message = "Setting \124cff00ff00"..tostring(SettingCheckSetting).."\124r = \124cffffff00"..tostring(value).."\124r ("..numSenders.."): "
                 for i = 1, numSenders, 1 do
                     local sender = senders[i]
@@ -1677,7 +1777,7 @@ local function HandleSettingCheck()
         end
 
         -- sort DNR by class, name
-        table.sort(didNotRespond, function(a, b)
+        tsort(didNotRespond, function(a, b)
             if (a.Class ~= b.Class) then
                 return a.Class < b.Class
             end
@@ -1685,7 +1785,7 @@ local function HandleSettingCheck()
         end)
 
         -- sort offline by class, name
-        table.sort(offline, function(a, b)
+        tsort(offline, function(a, b)
             if (a.Class ~= b.Class) then
                 return a.Class < b.Class
             end
@@ -1693,7 +1793,7 @@ local function HandleSettingCheck()
         end)
 
         -- display DNR
-        local numDNR = table.getn(didNotRespond)
+        local numDNR = tgetn(didNotRespond)
         if (numDNR > 0) then
             local message = "\124cffff0000Did not respond to setting check\124r ("..tostring(numDNR).."): "
             for i = 1, numDNR, 1 do
@@ -1707,7 +1807,7 @@ local function HandleSettingCheck()
         end
 
         -- display offline
-        local numOffline = table.getn(offline)
+        local numOffline = tgetn(offline)
         if (numOffline > 0) then
             local message = "\124cffaaaaaaOffline\124r ("..tostring(numOffline).."): "
             for i = 1, numOffline, 1 do
@@ -1948,7 +2048,7 @@ local function CmdEarlyUnbind(msg)
         end
 
         METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE = value
-        Print("Early Unbind value is now set to \124cffffff00"..string.format("%.2f", value).."\124r.")
+        Print("Early Unbind value is now set to \124cffffff00"..strformat("%.2f", value).."\124r.")
         MethWheelchair_MainFrame_Options_UnbindBeforeShackle_Slider:SetValue(value * 1000)
 
     -- toggle
@@ -2086,17 +2186,17 @@ local function CmdGuilty(msg)
 
     if (args[2] == "enable") then
         METHWHEELCHAIR_CONFIG.SHOW_GUILTY = true
-        Print("Shackle shatter notifications are now \124cff00ff00enabled\124r.")
+        Print("Shackle Shatter notifications are now \124cff00ff00enabled\124r.")
     elseif (args[2] == "disable") then
         METHWHEELCHAIR_CONFIG.SHOW_GUILTY = false
-        Print("Shackle shatter notifications are now \124cffff0000disabled\124r.")
+        Print("Shackle Shatter notifications are now \124cffff0000disabled\124r.")
     else
         if (METHWHEELCHAIR_CONFIG.SHOW_GUILTY) then
             METHWHEELCHAIR_CONFIG.SHOW_GUILTY = false
-            Print("Shackle shatter notifications are now \124cffff0000disabled\124r.")
+            Print("Shackle Shatter notifications are now \124cffff0000disabled\124r.")
         else
             METHWHEELCHAIR_CONFIG.SHOW_GUILTY = true
-            Print("Shackle shatter notifications are now \124cff00ff00enabled\124r.")
+            Print("Shackle Shatter notifications are now \124cff00ff00enabled\124r.")
         end
     end
 

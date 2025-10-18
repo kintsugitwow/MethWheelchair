@@ -39,7 +39,7 @@
     <!-- MAIN FRAME -->
     <Frame name="MethWheelchair_MainFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true" frameStrata="HIGH">
         <Size>
-            <AbsDimension x="480" y="292"/>
+            <AbsDimension x="480" y="294"/>
         </Size>
         <Anchors>
             <Anchor point="CENTER"/>
@@ -182,7 +182,7 @@
 
                 local versionFontString = getglobal(this:GetName().."_Version")
                 versionFontString:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
-                local version = "v"..MethWheelchair.GetAddonVersion()
+                local version = "v"..MethWheelchair.GetAddonVersionStr()
                 if (MethWheelchair.DebugMode) then
                     version = version.." (Debug)"
                 end
@@ -277,6 +277,39 @@
                                 end
                             </OnClick>
                         </Scripts>
+                        <Frames>
+                            <!-- FULL-SCREEN EFFECT SLIDER -->
+                            <!--<Slider name="$parent_Slider" inherits="OptionsSliderTemplate">
+                                <Size>
+                                    <AbsDimension x="150" y="16"/>
+                                </Size>
+                                <Anchors>
+                                    <Anchor point="BOTTOMRIGHT">
+                                        <Offset>
+                                            <AbsDimension x="150" y="-14"/>
+                                        </Offset>
+                                    </Anchor>
+                                </Anchors>
+                                <Scripts>
+                                    <OnLoad>
+                                        getglobal(this:GetName().."Text"):SetText("")
+                                        getglobal(this:GetName().."Low"):SetText("")
+                                        getglobal(this:GetName().."High"):SetText("")
+
+                                        this:SetMinMaxValues(250, 750)
+                                        this:SetValueStep(1)
+                                    </OnLoad>
+                                    <OnValueChanged>
+                                        local value = this:GetValue()
+                                        if (METHWHEELCHAIR_CONFIG) then
+                                            METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT_DARKNESSLEVEL = value
+                                            local texture = MethWheelchair.FullScreenEffect.Texture
+                                            texture:SetTexture(0.0, 0.0, 0.0, METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT_DARKNESSLEVEL / 1000)
+                                        end
+                                    </OnValueChanged>
+                                </Scripts>
+                            </Slider>-->
+                        </Frames>
                     </CheckButton>
 
                     <!-- UNBIND AUTORUN BY SUBZONE -->
@@ -641,7 +674,7 @@
             </OnDragStop>
             <OnEnter>
                 GameTooltip:SetOwner(this, "ANCHOR_TOPLEFT", 0, 0)
-                GameTooltip:AddLine("MethWheelchair " .. MethWheelchair.GetAddonVersion(), 1, 1, 1)
+                GameTooltip:AddLine("MethWheelchair "..MethWheelchair.GetAddonVersionStr(), 1, 1, 1)
                 GameTooltip:AddLine("Left-click to toggle UI\nHold Left-click and drag to move this button")
                 GameTooltip:Show()
             </OnEnter>
