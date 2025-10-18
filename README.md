@@ -3,8 +3,10 @@
 Disables movement keybinds after standing still for at least one frame after Mephistroth finishes casting Shackles of the Legion.<br>
 After debuff is gone or after 6.5 secs of cast event re-enables keybinds.<br>
 Hitting movement keybinds during that time will cancel spell casts.<br>
+Additionally removes movement keybinds while under effect of Enveloped Flames used by Lingering Magus.<br>
 
 Click minimap button or type ``/mw`` to open configuration panel.<br>
+
 
 ## Commands
 
@@ -25,6 +27,8 @@ Use ``/mw eub <number_value>`` to set early unbind value (replace ``<number_valu
 ## Known issues
 
 - Requires player to manually stop moving before Shackles of the Legion cast finishes.
+
+- Opening keybind setting in game menu and pressing "Okey" button while some keybinds are removed by the addon will remove them permamently and will require manual restoration. This includes auto-unbinding autorun and jump keybinds while on meth platform.
 
 - Holding Strafe Left and Strafe Right keys at same time causes player to stop moving because velocity in both direction adds up to 0, but when keybinds are restored and player presses one of strafe keybinds and releases it, the player character will start running in opposite direction until opposite direction keybind is pressed and released. *In short: Sometimes after Shackles you have to quickly tap left and right movement keys or your character will move funny.*
 
