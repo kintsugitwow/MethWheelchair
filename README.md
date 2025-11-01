@@ -1,9 +1,9 @@
 # MethWheelchair
 
 Disables movement keybinds after standing still for at least one frame after Mephistroth finishes casting Shackles of the Legion.<br>
-After debuff is gone or after 6.5 secs of cast event re-enables keybinds.<br>
+After the debuff is gone or after 6.5 secs of cast event re-enables keybinds.<br>
 Hitting movement keybinds during that time will cancel spell casts.<br>
-Additionally removes movement keybinds while under effect of Enveloped Flames used by Lingering Magus.<br>
+Additionally removes movement keybinds while under effect of Enveloped Flames used by Lingering Magi.<br>
 
 Click minimap button or type ``/mw`` to open configuration panel.<br>
 
@@ -28,13 +28,13 @@ Use ``/mw eub <number_value>`` to set early unbind value (replace ``<number_valu
 
 - Requires player to manually stop moving before Shackles of the Legion cast finishes.
 
-- Opening keybind setting in game menu and pressing "Okey" button while some keybinds are removed by the addon will remove them permamently and will require manual restoration. This includes auto-unbinding autorun and jump keybinds while on meth platform.
+- Opening Key Bindings setting in game menu and pressing "Okay" button while some keybinds are removed by the addon will remove them permanently and will require manual restoration. This includes auto-unbinding auto-run and jump keybinds while on meth platform.
 
-- Holding Strafe Left and Strafe Right keys at same time causes player to stop moving because velocity in both direction adds up to 0, but when keybinds are restored and player presses one of strafe keybinds and releases it, the player character will start running in opposite direction until opposite direction keybind is pressed and released. *In short: Sometimes after Shackles you have to quickly tap left and right movement keys or your character will move funny.*
+- Holding Strafe Left and Strafe Right keys at same time causes player to stop moving because velocity in both direction adds up to 0, but when keybinds are restored and player presses one of strafe keybinds and releases it, the player character will start running in opposite direction until opposite direction keybind is pressed and released. *In short: Sometimes after Shackles, you have to quickly tap left and right movement keys or your character will move funny.*
 
-- Protection agains moving by holding Left and Right Mouse Buttons simultaneously disables Left Mouse Button functinality in game world meaning that you can't target enemies by clicking on their models or rotate camera by holding Left Mouse Button, you can still target enemies by clicking their namepaltes or cast your spells by clicking them. Right Mouse Button still works during that time and should be used for these actions (targeting by clicking models, rotating camera). Full Left Mouse Button functionality is restored the same time as all movment keybinds are restored - when shackles ends or after 6.5 secs. <br>*This works only with SuperWoW installed.* <br>As a side effect, movement action MOVEANDSTEER (by default bound to holding down Mouse Wheel) is permamently disabled after first movement block. It is not restored when shackle ends. To restore its functionality relog or use command ``/mw reload``.
+- Protection against moving by holding Left and Right Mouse Buttons simultaneously disables Left Mouse Button functionality in game world meaning that you can't target enemies by clicking on their models or rotate camera by holding Left Mouse Button, you can still target enemies by clicking their nameplates or cast your spells by clicking them. Right Mouse Button still works during that time and should be used for these actions (targeting by clicking models, rotating camera). Full Left Mouse Button functionality is restored at the same time as all movement keybinds are restored - when shackles ends or after 6.5 secs. <br>*This works only with SuperWoW installed.* <br>As a side effect, movement action MOVEANDSTEER (by default bound to holding down Mouse Wheel) is permanently disabled after first movement block. It is not restored when shackle ends. To restore its functionality relog or use command ``/mw reload``.
 
-- During Shackle there is only one mouse button pressed at a time allowed. This will fail if both mouse buttons trigger MouseDown event during same frame. This shouldn't be an issue for SuperWoW users, due to solution in section above, but will result in Shackle Shatter in case of non-SuperWoW user.
+- During Shackle there is only one mouse button pressed at a time allowed. This will fail if both mouse buttons trigger MouseDown event during same frame. This shouldn't be an issue for SuperWoW users, due to solution in section above, but will result in Shackle Shatter in the case of non-SuperWoW user.
 
 - Another way to Shatter Shackle:<br>
     **1.** Press Right Mouse Button<br>
@@ -46,4 +46,5 @@ Use ``/mw eub <number_value>`` to set early unbind value (replace ``<number_valu
     **7.** Start walking backwards<br>
     **8.** Release S<br>
     **9.** Continue walking backwards<br>
+
     *Replace S with A or D to spin instead of walking backwards (not shattering shackle)*<br>
