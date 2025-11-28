@@ -35,6 +35,9 @@ local CONFIG_DEFAULT_VALUE = {
     FULLSCREENEFFECT = true,
     --FULLSCREENEFFECT_DARKNESSLEVEL = 500,
 
+    -- fullscreen effect regarding Astral Insight and King's Fury
+    ADDITIONAL_FULLSCREENEFFECTS = false,
+
     -- unbind keybind earlier by (ShackleCastDuration - EARLY_UNBIND_VALUE)
     EARLY_UNBIND = false,
     -- time value in ms
@@ -160,6 +163,27 @@ local NoJumpSubZones = {
     "Hand of Mephistroth",
 }
 
+-- Astral Insight (Lingering Astrologist)
+local AstralInsightSpellID = 58022
+local AstralInsightSpellIDTriggers = {
+    AstralInsightSpellID,
+}
+
+local AstralInsightSpellNameTriggers = {
+    "Astral Insight",
+}
+
+local AstralInsightTextureTriggers = {
+    "Ability_Creature_Cursed_03",
+}
+
+-- King's Fury
+local KingsFurySpellID = 51229
+local KingsFurySpellIDTriggers = {
+    KingsFurySpellID,
+}
+
+
 if (DEBUG_MODE) then
     -- names
     tinsert(ShackleSpellNameTriggers, "Weakened Soul")
@@ -172,6 +196,9 @@ if (DEBUG_MODE) then
     tinsert(NoAutorunSubZones, "The Park") -- SW park
     -- no jump subzones
     tinsert(NoJumpSubZones, "The Park") -- SW park
+
+    tinsert(AstralInsightSpellNameTriggers, "Weakened Soul")
+    tinsert(KingsFurySpellIDTriggers, 6063) -- Heal (Rank 3)
 end
 
 
@@ -237,9 +264,19 @@ local Stats = {
 }
 
 
+-- anti-keybordturner stuff
+local PlayerKeyboardTurning = false
+local LastFacing = nil
+local function IsPlayerKeybaordTurning()
+    return PlayerKeyboardTurning
+end
+
+
 -- hook
 local old_CameraOrSelectOrMoveStart = CameraOrSelectOrMoveStart
 
+
+-- localize frequently used functions
 local strfind = string.find
 local strlower = string.lower
 local strformat = string.format
@@ -259,6 +296,10 @@ local SetBinding = SetBinding
 local GetBindingKey = GetBindingKey
 local GetZoneText = GetZoneText
 local GetSubZoneText = GetSubZoneText
+
+
+-- check if UnitXP Service Pack 3 .dll is loaded
+local UXPSP3 = pcall(UnitXP, "inSight", "PLAYER", "PLAYER")
 
 
 
@@ -281,6 +322,21 @@ local function GetAddonVersionStr()
     return strformat("%.2f", tostring(GetAddonVersion()))
 end
 MethWheelchair.GetAddonVersionStr = GetAddonVersionStr
+
+
+local function UnitGUID(unit)
+    local _, guid = UnitExists(unit)
+    return guid
+end
+
+
+
+local UnitInLoS -- if unitxp service pack 3 exists
+if (UXPSP3) then
+    UnitInLoS = function(unit) return UnitXP("inSight", "PLAYER", unit) end
+else
+    UnitInLoS = function() return nil end
+end
 
 
 local function GetClassColor(unit)
@@ -312,15 +368,15 @@ local function UnitHasDebuff(unit, texture)
 end
 
 
-local function IsShackleSpellName(spellName)
-    for _, name in ShackleSpellNameTriggers do
-        if (name == spellName) then
-            return true
-        end
-    end
-
-    return false
-end
+--local function IsShackleSpellName(spellName)
+--    for _, name in ShackleSpellNameTriggers do
+--        if (name == spellName) then
+--            return true
+--        end
+--    end
+--
+--    return false
+--end
 
 
 local function IsShackleSpellID(spellID)
@@ -389,6 +445,50 @@ local function IsNoJumpSubZone(subZoneName)
 end
 
 
+local function IsAstralInsightSpellID(spellID)
+    for _, sid in AstralInsightSpellIDTriggers do
+        if (sid == spellID) then
+            return true
+        end
+    end
+
+    return false
+end
+
+
+--local function IsAstralInsightSpellName(spellName)
+--    for _, name in AstralInsightSpellNameTriggers do
+--        if (name == spellName) then
+--            return true
+--        end
+--    end
+--
+--    return false
+--end
+
+
+local function IsAstralInsightTexture(texture)
+    for _, t in AstralInsightTextureTriggers do
+        if (strfind(texture, t)) then
+            return true
+        end
+    end
+
+    return false
+end
+
+
+local function IsKingsFurySpellID(spellID)
+    for _, sid in KingsFurySpellIDTriggers do
+        if (sid == spellID) then
+            return true
+        end
+    end
+
+    return false
+end
+
+
 local function InitSetting(setting)
     if (METHWHEELCHAIR_CONFIG[setting] == nil) then
         if (CONFIG_DEFAULT_VALUE[setting] == nil) then
@@ -403,39 +503,25 @@ end
 
 
 local function InitUIConfig()
-    if (MethWheelchair_MainFrame_Options_ShowLoginInfo) then
-        MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(METHWHEELCHAIR_CONFIG.LOGIN_INFO)
-    end
+    MethWheelchair_MainFrame_Options_ShowLoginInfo:SetChecked(METHWHEELCHAIR_CONFIG.LOGIN_INFO)
 
-    if (MethWheelchair_MainFrame_Options_EnableFullScreenEffect) then
-        MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT)
-        if (MethWheelchair_MainFrame_Options_EnableFullScreenEffect_Slider) then
-            MethWheelchair_MainFrame_Options_EnableFullScreenEffect_Slider:SetValue(METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT_DARKNESSLEVEL)
-        end
+    MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT)
+    if (MethWheelchair_MainFrame_Options_EnableFullScreenEffect_Slider) then
+        MethWheelchair_MainFrame_Options_EnableFullScreenEffect_Slider:SetValue(METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT_DARKNESSLEVEL)
     end
+        
+    MethWheelchair_MainFrame_Options_AdditionalFullScreenEffects:SetChecked(METHWHEELCHAIR_CONFIG.ADDITIONAL_FULLSCREENEFFECTS)
 
-    if (MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone) then
-        MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE)
-    end
+    MethWheelchair_MainFrame_Options_UnbindAutorunBySubZone:SetChecked(METHWHEELCHAIR_CONFIG.UNBIND_AUTORUN_BY_SUBZONE)
 
-    if (MethWheelchair_MainFrame_Options_UnbindJumpBySubZone) then
-        MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE)
-    end
+    MethWheelchair_MainFrame_Options_UnbindJumpBySubZone:SetChecked(METHWHEELCHAIR_CONFIG.UNBIND_JUMP_BY_SUBZONE)
 
-    if (MethWheelchair_MainFrame_Options_UnbindBeforeShackle) then
-        MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(METHWHEELCHAIR_CONFIG.EARLY_UNBIND)
-        if (MethWheelchair_MainFrame_Options_UnbindBeforeShackle_Slider) then
-            MethWheelchair_MainFrame_Options_UnbindBeforeShackle_Slider:SetValue(METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE)
-        end
-    end
-    
-    if (MethWheelchair_MainFrame_Options_BlockLeftMouseButton) then
-        MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(METHWHEELCHAIR_CONFIG.BLOCK_LMB)
-    end
+    MethWheelchair_MainFrame_Options_UnbindBeforeShackle:SetChecked(METHWHEELCHAIR_CONFIG.EARLY_UNBIND)
+    MethWheelchair_MainFrame_Options_UnbindBeforeShackle_Slider:SetValue(METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE)
 
-    if (MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime) then
-        MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK)
-    end
+    MethWheelchair_MainFrame_Options_BlockLeftMouseButton:SetChecked(METHWHEELCHAIR_CONFIG.BLOCK_LMB)
+
+    MethWheelchair_MainFrame_Options_AllowOnlyOneMouseButtonAtATime:SetChecked(METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK)
 
     if (MethWheelchair_MinimapButton) then
         MethWheelchair_MinimapButton:ClearAllPoints()
@@ -495,6 +581,9 @@ local function InitFullScreenEffect()
 
         FullScreenEffect:RegisterEvent("UNIT_CASTEVENT")
         FullScreenEffect:RegisterEvent("CHAT_MSG_RAID_BOSS_EMOTE")
+        if (METHWHEELCHAIR_CONFIG.ADDITIONAL_FULLSCREENEFFECTS) then
+            FullScreenEffect:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE")
+        end
 
         if (DEBUG_MODE) then
             FullScreenEffect:RegisterEvent("CHAT_MSG_WHISPER") -- test
@@ -510,8 +599,22 @@ local function InitFullScreenEffect()
                     local castDuration = arg5
 
                     if (METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT) then
+                        -- Shackles of the Legion
                         if (eventType == "START" and IsShackleSpellID(spellID)) then
-                            FullScreenEffect:Begin(GetTime() + (castDuration / 1000) + ShackleDuration + 0.5)
+                            this:Begin(GetTime() + (castDuration / 1000) + ShackleDuration + 0.5)
+                        end
+                    end
+
+                    if (METHWHEELCHAIR_CONFIG.ADDITIONAL_FULLSCREENEFFECTS) then
+                        -- King's Fury
+                        if (eventType == "START" and IsKingsFurySpellID(spellID)) then
+                            if (DEBUG_MODE) then
+                                this.KingGUID = "0xF13000C5532713E7" -- Apprentice Training Dummy in SW Park cellar
+                            else
+                                this.KingGUID = casterGUID
+                            end
+                            this.KingsFury = true
+                            this:Begin(GetTime() + (castDuration / 1000))
                         end
                     end
                 end
@@ -523,30 +626,74 @@ local function InitFullScreenEffect()
                 if (IsShackleEmote(arg1) and ((not SUPERWOW_VERSION) or (not METHWHEELCHAIR_CONFIG.SUPERWOW))) then
                     FullScreenEffect:Begin(GetTime() + ShackleCastDuration + ShackleDuration + 0.5)
                 end
+            elseif (event == "CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE") then -- debuff landing on me
+                for _, spellName in AstralInsightSpellNameTriggers do
+                    if (strfind(arg1, spellName)) then
+                        this:Begin(GetTime() + 7.0)
+                        this.Texture:SetTexture(0.1, 0.0, 0.2, 0.5)
+                        this.Text:SetText("!!! STOP CASTING !!!")
+                        this.AstralInsight = true
+                    end
+                end
             end
         end)
 
         FullScreenEffect:SetScript("OnUpdate", function()
             local now = GetTime()
 
-            if (FullScreenEffect.EndTime and (
-                    (FullScreenEffect.EndTime < now)
-                    or (FullScreenEffect.EndTime < now + ShackleDuration and (not TestInProgress))
-                )
-            ) then
-                local hasDebuff = false
-                for _, texture in ShackleTextureTriggers do
-                    if (UnitHasDebuff("PLAYER", texture)) then
-                        hasDebuff = true
-                        break
-                    end
+            -- King's Fury first beacuse it doesn't depend on debuff
+            if (this.KingsFury) then
+                if (this.KingGUID and (UnitInLoS(this.KingGUID) or not UXPSP3)) then
+                    this.Texture:SetTexture(0.09, 0.09, 0.0, 0.4)
+                    this.Text:SetText("!!! HIDE BEHIND PILLAR !!!")
+                    this.Text:SetTextColor(1.0, 0.0, 0.0, 1.0)
+                else
+                    this.Texture:SetTexture(1.0, 0.0, 1.0, 0.05)
+                    this.Text:SetText("!!! KEEP HIDING !!!")
+                    this.Text:SetTextColor(0.1, 1.0, 0.0, 1.0)
                 end
 
-                if (hasDebuff == false) then
-                    FullScreenEffect.EndTime = nil
-                    FullScreenEffect:Hide()
+                if (this.EndTime and this.EndTime < now) then
+                    this.EndTime = nil
+                    this.KingsFury = nil
+                    this.KingGUID = nil
+                    this:Hide()
+                    return
+                end
+
+            else
+                -- Shackle
+                if (this.EndTime and (
+                        (this.EndTime < now)
+                        or (this.EndTime < now + ShackleDuration and (not TestInProgress))
+                    )
+                ) then
+                    local hasDebuff = false
+                    for _, texture in ShackleTextureTriggers do
+                        if (UnitHasDebuff("PLAYER", texture)) then
+                            hasDebuff = true
+                            break
+                        end
+                    end
+
+                    -- Astral Insight
+                    if (not hasDebuff) then
+                        for _, texture in AstralInsightTextureTriggers do
+                            if (UnitHasDebuff("PLAYER", texture)) then
+                                hasDebuff = true
+                                break
+                            end
+                        end
+                    end
+
+                    if (hasDebuff == false) then
+                        this.EndTime = nil
+                        this:Hide()
+                        return
+                    end
                 end
             end
+
         end)
 
         MethWheelchair.FullScreenEffect = FullScreenEffect
@@ -1324,6 +1471,11 @@ local function TryUnbind(px, py)
             Print("Movement \124cffff0000disabled\124r.")
             UnbindAllKeybinds()
 
+            -- not sure about it, standing still by pressing both mouse buttons and S will result in instant death
+            -- in case player knows how to counter it there is a chance to survive
+            -- also distracting
+            --MouselookStop()
+
             -- disable camera movement on left click,
             -- results in not being able to move using left and right mouse buttons
             if (SUPERWOW_VERSION and METHWHEELCHAIR_CONFIG.BLOCK_LMB) then
@@ -1343,6 +1495,7 @@ end
 
 
 local function TryUnbindMouse()
+    local badRMB = false
     -- only one mouse button at a time
     if (METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK and ShackleCastTime ~= 0) then
         if (LmbDown == true) then
@@ -1350,6 +1503,7 @@ local function TryUnbindMouse()
             if (RmbDown == false and rmbKeybind ~= nil) then
                 -- unbind RMB
                 SetBinding(RmbKeybind, nil)
+                badRMB = true
                 if (MouseButtonDebug) then
                     Print("RMB unbound")
                 end
@@ -1381,6 +1535,42 @@ local function TryUnbindMouse()
                     Print("LMB restored")
                 end
             end
+        end
+    end
+
+    -- if player is keyboard-turning during shackle, disable right-click so he can't use it to move sideways
+    if (ShackleCastTime ~= 0 and IsPlayerKeybaordTurning()) then
+        local rmbKeybind = GetBindingKey(RMB_ACTION)
+        if (rmbKeybind ~= nil) then
+            MouselookStop()
+            SetBinding(RmbKeybind, nil) -- unbind RMB
+            badRMB = true
+            if (MethWheelchair_RotatorWarning) then
+                if (not MethWheelchair_RotatorWarning:IsShown()) then
+                    MethWheelchair_RotatorWarning.StartTime = GetTime()
+                    MethWheelchair_RotatorWarning:Show()
+                    MethWheelchair_RotatorWarning_Text1:Hide()
+                    MethWheelchair_RotatorWarning_Text2:Hide()
+                end
+            end
+        end
+    end
+
+    if (not badRMB) then
+        -- restore RMB
+        local rmbKeybind = GetBindingKey(RMB_ACTION)
+        if (not rmbKeybind) then
+            SetBinding(RmbKeybind, RMB_ACTION)
+            MouselookStop()
+            if (MouseButtonDebug) then
+                Print("RMB restored")
+            end
+        end
+        if (MethWheelchair_RotatorWarning) then
+            MethWheelchair_RotatorWarning.StartTime = nil
+            MethWheelchair_RotatorWarning:Hide()
+            MethWheelchair_RotatorWarning_Text1:Hide()
+            MethWheelchair_RotatorWarning_Text2:Hide()
         end
     end
 end
@@ -1839,6 +2029,15 @@ EventFrame:SetScript("OnUpdate", function()
         EarlyUnbindAddedCastDuration = 0
     end
 
+    -- check if player is keyboard-turning
+    local facing = GetPlayerFacing()
+	if ((LastFacing and facing ~= LastFacing) and (not IsMouselooking())) then
+		PlayerKeyboardTurning = true
+	else
+		PlayerKeyboardTurning = false
+	end
+	LastFacing = facing
+
     -- check if player is moving and try to unbind keybinds if scheduled
     if (SUPERWOW_VERSION and METHWHEELCHAIR_CONFIG.SUPERWOW) then
         local px, py = UnitPosition("PLAYER")
@@ -2088,6 +2287,36 @@ local function CmdFullScreenEffect(msg)
         METHWHEELCHAIR_CONFIG.FULLSCREENEFFECT = true
         Print("Full-Screen Effect is now \124cff00ff00enabled\124r.")
         MethWheelchair_MainFrame_Options_EnableFullScreenEffect:SetChecked(true)
+    end
+
+    return true
+end
+
+local function CmdAdditionalFullScreenEffects(msg)
+    local cmd = { "afs", "afse", "afullscreen", "additionalfullscreen", "additionalfullscreeneffect" }
+    local args = MsgArgs(msg, 2)
+    if (not IsCmd(cmd, args[1])) then return false end
+
+    if (args[2] == "enable") then
+        METHWHEELCHAIR_CONFIG.ADDITIONAL_FULLSCREENEFFECTS = true
+        Print("Additional Full-Screen Effect is now \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_AdditionalFullScreenEffects:SetChecked(true)
+        FullScreenEffect:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE")
+    elseif (args[2] == "disable") then
+        METHWHEELCHAIR_CONFIG.ADDITIONAL_FULLSCREENEFFECTS = false
+        Print("Additional Full-Screen Effect is now \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_AdditionalFullScreenEffects:SetChecked(false)
+        FullScreenEffect:UnregisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE")
+    elseif (METHWHEELCHAIR_CONFIG.ADDITIONAL_FULLSCREENEFFECTS == true) then
+        METHWHEELCHAIR_CONFIG.ADDITIONAL_FULLSCREENEFFECTS = false
+        Print("Additional Full-Screen Effect is now \124cffff0000disabled\124r.")
+        MethWheelchair_MainFrame_Options_AdditionalFullScreenEffects:SetChecked(false)
+        FullScreenEffect:UnregisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE")
+    else
+        METHWHEELCHAIR_CONFIG.ADDITIONAL_FULLSCREENEFFECTS = true
+        Print("Additional Full-Screen Effect is now \124cff00ff00enabled\124r.")
+        MethWheelchair_MainFrame_Options_AdditionalFullScreenEffects:SetChecked(true)
+        FullScreenEffect:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE")
     end
 
     return true
@@ -2424,6 +2653,7 @@ SlashCmdList["METHWHEELCHAIR"] = function(msg)
     if (CmdMMB(msg)) then return end
     if (CmdEarlyUnbind(msg)) then return end
     if (CmdFullScreenEffect(msg)) then return end
+    if (CmdAdditionalFullScreenEffects(msg)) then return end
     if (CmdAutorun(msg)) then return end
     if (CmdJump(msg)) then return end
 

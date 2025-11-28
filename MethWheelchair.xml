@@ -5,7 +5,7 @@
     <!-- TEMPLATES -->
 
     <!-- TITLE FONT -->
-    <Font name="MethWHeelchair_MorpheusFont" font="Fonts\MORPHEUS.TTF" virtual="true">
+    <Font name="MethWheelchair_MorpheusFont" font="Fonts\MORPHEUS.TTF" virtual="true">
         <FontHeight>
             <AbsValue val="28"/>
         </FontHeight>
@@ -39,7 +39,7 @@
     <!-- MAIN FRAME -->
     <Frame name="MethWheelchair_MainFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true" frameStrata="HIGH">
         <Size>
-            <AbsDimension x="480" y="294"/>
+            <AbsDimension x="480" y="318"/>
         </Size>
         <Anchors>
             <Anchor point="CENTER"/>
@@ -312,13 +312,44 @@
                         </Frames>
                     </CheckButton>
 
+                    <!-- ADDITIONAL FULLSCREEN EFFECTS -->
+                    <CheckButton name="$parent_AdditionalFullScreenEffects" inherits="OptionsCheckButtonTemplate">
+                        <Size>
+                            <AbsDimension x="24" y="24"/>
+                        </Size>
+
+                        <Anchors>
+                            <Anchor point="TOP" relativeTo="$parent_EnableFullScreenEffect" relativePoint="TOP">
+                                <Offset>
+                                    <AbsDimension x="0" y="-26"/>
+                                </Offset>
+                            </Anchor>
+                        </Anchors>
+                        <Scripts>
+                            <OnLoad>
+                                local text = getglobal(this:GetName().."Text")
+                                text:SetText("Enable additional full-screen effects")
+                                text:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+                                text:SetTextColor(0.92, 0.92, 1.0, 1.0)
+                                this:SetHitRectInsets(0, 0, 0, 0)
+                            </OnLoad>
+                            <OnClick>
+                                if (this:GetChecked() == 1) then
+                                    METHWHEELCHAIR_CONFIG.ADDITIONAL_FULLSCREENEFFECTS = true
+                                else
+                                    METHWHEELCHAIR_CONFIG.ADDITIONAL_FULLSCREENEFFECTS = false
+                                end
+                            </OnClick>
+                        </Scripts>
+                    </CheckButton>
+
                     <!-- UNBIND AUTORUN BY SUBZONE -->
                     <CheckButton name="$parent_UnbindAutorunBySubZone" inherits="OptionsCheckButtonTemplate">
                         <Size>
                             <AbsDimension x="24" y="24"/>
                         </Size>
                         <Anchors>
-                            <Anchor point="TOP" relativeTo="$parent_EnableFullScreenEffect" relativePoint="TOP">
+                            <Anchor point="TOP" relativeTo="$parent_AdditionalFullScreenEffects" relativePoint="TOP">
                                 <Offset>
                                     <AbsDimension x="0" y="-26"/>
                                 </Offset>
@@ -498,6 +529,7 @@
                             </OnClick>
                         </Scripts>
                     </CheckButton>
+
                 </Frames>
 
                 <Scripts>
@@ -626,6 +658,7 @@
     </Frame>
 
 
+    <!-- MINIMAP BUTTON -->
     <Button name="MethWheelchair_MinimapButton" movable="true" parent="Minimap" enableMouse="true" toplevel="true">
         <Size x="33" y="33"/>
         <Anchors>
@@ -694,5 +727,69 @@
             </OnEvent>
         </Scripts>
     </Button>
+
+
+    <!-- KEYBOARD-TURNER EASTER EGG -->
+    <Frame name="MethWheelchair_RotatorWarning" hidden="true">
+        <Size x="200" y="20"/>
+        <Anchors>
+            <Anchor point="CENTER">
+                <Offset x="0" y="150"/>
+            </Anchor>
+        </Anchors>
+        <Layers>
+            <Layer level="OVERLAY">
+                <FontString name="$parent_Text1" font="MethWheelchair_MorpheusFont"
+                            text="GET ROTATED" hidden="true">
+                    <Anchors>
+                        <Anchors point="CENTER"/>
+                    </Anchors>
+                </FontString>
+                <FontString name="$parent_Text2" font="MethWheelchair_MorpheusFont"
+                            text="STOOPEED KEYBOARD-TURNER" hidden="true">
+                    <Anchors>
+                        <Anchors point="TOP" relativeTo="$parent_Text1" relativePoint="BOTTOM">
+                            <Offset x="0" y="-8"/>
+                        </Anchors>
+                    </Anchors>
+                </FontString>
+            </Layer>
+
+        </Layers>
+
+        <Scripts>
+            <OnUpdate>
+                local updateTime = GetTime()
+                if (this.StartTime and (updateTime > (this.StartTime + 0.3))) then
+                    local name = this:GetName()
+                    local text1 = getglobal(name .. "_Text1")
+                    local text2 = getglobal(name .. "_Text2")
+                    text1:Show()
+                    text2:Show()
+
+                    local r1 = math.abs(math.sin((updateTime) * 2))
+                    local g1 = r1 / 6
+                    local b1 = 1 - r1 / 2
+                    local a1 = 1
+
+                    text1:SetTextColor(r1, g1, b1, a1)
+
+                    local r2 = math.abs(math.sin((updateTime * 2) + 1.57))
+                    local g2 = r2 / 6
+                    local b2 = 1 - r2 / 2
+                    local a2 = 1
+
+                    text2:SetTextColor(r2, g2, b2, a2)
+                else
+                    local name = this:GetName()
+                    local text1 = getglobal(name .. "_Text1")
+                    local text2 = getglobal(name .. "_Text2")
+                    text1:Hide()
+                    text2:Hide()
+                end
+            </OnUpdate>
+        </Scripts>
+
+    </Frame>
 
 </Ui>

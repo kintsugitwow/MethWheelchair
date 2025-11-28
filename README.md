@@ -1,9 +1,12 @@
-# MethWheelchair
+# MethWheelchair 1.11
 
 Disables movement keybinds after standing still for at least one frame after Mephistroth finishes casting Shackles of the Legion.<br>
 After the debuff is gone or after 6.5 secs of cast event re-enables keybinds.<br>
 Hitting movement keybinds during that time will cancel spell casts.<br>
-Additionally removes movement keybinds while under effect of Enveloped Flames used by Lingering Magi.<br>
+Additionally removes movement keybinds while under effect of Enveloped Flames used by Lingering Magi as well as display full-screen effect while affected by Astral Insight spell used by Lingering Astrologists.<br>
+During Chess fight displays dark yellow full-screen effect during King's Fury cast that changes to light pink once player breaks line of sight with King, provided that both SuperWoW and UnitXP are correctly installed. In case of lack of UnitXP, effect will remain dark yellow. *(Additional full-screen effects option in settings)*<br>
+
+Whenever you change your keybinds make sure to relog afterwards, before using/testing the addon.<br>
 
 Click minimap button or type ``/mw`` to open configuration panel.<br>
 
@@ -16,12 +19,13 @@ Use ``/mw unbind`` or ``/mw test`` to test keybind removal.<br>
 Use ``/mw keybinds`` to display list of saved keybinds.<br>
 Use ``/mw logininfo`` to toggle display of saved keybinds on login.<br>
 Use ``/mw fse`` to toggle displaying full-screen effect.<br>
+Use ``/mw afse`` to toggle displaying additional full-screen effects like King's Fury or Astral Insight warnings.<br>
 Use ``/mw lmb`` to toggle blocking left mouse button (prevents moving on pressing left and right mouse buttons simultaneously). *More info in Known issues section.*<br>
 Use ``/mw mmb`` to toggle mutual blocking of both mouse buttons (prevents moving on pressing left and right mouse buttons simultaneously). *More info in Known issues section.*<br>
 Use ``/mw autorun`` to toggle unbinding auto run while on Meth platform.<br>
 Use ``/mw jump`` to toggle unbinding jump while on Meth platform.<br>
-Use ``/mw eub`` to toggle unbinding keybinds before shackle cast finishes depending on configured value.<br>
-Use ``/mw eub <number_value>`` to set early unbind value (replace ``<number_value>`` with number between 0.0 and 3.0).<br>
+Use ``/mw eu`` to toggle unbinding keybinds before shackle cast finishes depending on configured value.<br>
+Use ``/mw eu <number_value>`` to set early unbind value (replace ``<number_value>`` with number between 0.0 and 3.0).<br>
 
 
 ## Known issues
@@ -39,12 +43,11 @@ Use ``/mw eub <number_value>`` to set early unbind value (replace ``<number_valu
 - Another way to Shatter Shackle:<br>
     **1.** Press Right Mouse Button<br>
     **2.** Press Left Mouse Button<br>
-    **3.** Get Shackle debuff<br>
-    **4.** Press S<br>
-    **5.** Stop moving - trigger unbind<br>
-    **6.** Release both mouse buttons<br>
-    **7.** Start walking backwards<br>
-    **8.** Release S<br>
-    **9.** Continue walking backwards<br>
+    **3.** Press S - Stop moving<br>
+    **4.** Get Shackle debuff - trigger unbind<br>
+    **5.** Release both mouse buttons<br>
+    **6.** Start walking backwards<br>
+    **7.** Release S<br>
+    **8.** Continue walking backwards<br>
 
     *Replace S with A or D to spin instead of walking backwards (not shattering shackle)*<br>
