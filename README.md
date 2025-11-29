@@ -1,4 +1,4 @@
-# MethWheelchair 1.11
+# MethWheelchair 1.12
 
 Disables movement keybinds after standing still for at least one frame after Mephistroth finishes casting Shackles of the Legion.<br>
 After the debuff is gone or after 6.5 secs of cast event re-enables keybinds.<br>
@@ -16,6 +16,7 @@ Click minimap button or type ``/mw`` to open configuration panel.<br>
 Use ``/mw`` to toggle UI.<br>
 Use ``/mw restore`` to forcefully restore your keybinds.<br>
 Use ``/mw unbind`` or ``/mw test`` to test keybind removal.<br>
+Use ``/mw fulltest`` to test all anti-shackle features of the addon, depending on configuration.<br>
 Use ``/mw keybinds`` to display list of saved keybinds.<br>
 Use ``/mw logininfo`` to toggle display of saved keybinds on login.<br>
 Use ``/mw fse`` to toggle displaying full-screen effect.<br>

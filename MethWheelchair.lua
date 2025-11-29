@@ -267,9 +267,10 @@ local Stats = {
 -- anti-keybordturner stuff
 local PlayerKeyboardTurning = false
 local LastFacing = nil
-local function IsPlayerKeybaordTurning()
+local function IsPlayerKeyboardTurning()
     return PlayerKeyboardTurning
 end
+MethWheelchair.IsPlayerKeyboardTurning = IsPlayerKeyboardTurning
 
 
 -- hook
@@ -280,11 +281,14 @@ local old_CameraOrSelectOrMoveStart = CameraOrSelectOrMoveStart
 local strfind = string.find
 local strlower = string.lower
 local strformat = string.format
+local strgsub = string.gsub
+local strlen = string.len
 local tostring = tostring
 local tonumber = tonumber
 local tinsert = table.insert
 local tsort = table.sort
 local tgetn = table.getn
+local tconcat = table.concat
 local pairs = pairs
 local ipairs = ipairs
 local UnitBuff = UnitBuff
@@ -324,11 +328,58 @@ end
 MethWheelchair.GetAddonVersionStr = GetAddonVersionStr
 
 
+local function ColorVersion(version)
+    if (not tonumber(version)) then
+        return"\124cffff0000"..version.."\124r"
+    elseif (tonumber(version) < GetAddonVersion()) then
+        return"\124cffff0000"..version.."\124r"
+    elseif (tonumber(version) > GetAddonVersion()) then
+        return "\124cffffff00"..version.."\124r"
+    elseif (tonumber(version) == GetAddonVersion()) then
+        return "\124cff00ff00"..version.."\124r"
+    end
+end
+
+
+local function SerializeTable(tbl)
+    local parts = {}
+    local function serialize(t)
+        for k, v in pairs(t) do
+            local vType = type(v)
+            local key = type(k) == "number" and "[" .. k .. "]" or "[\"" .. k .. "\"]"
+
+            if (vType == "table") then
+                tinsert(parts, key .. "={")
+                serialize(v)
+                tinsert(parts, "},")
+            elseif (vType == "string") then
+                tinsert(parts, key .. "=\"" .. strgsub(v, "\\", "\\\\") .. "\",")
+            else
+                tinsert(parts, key .. "=" .. tostring(v) .. ",")
+            end
+        end
+    end
+    
+    tinsert(parts, "{")
+    serialize(tbl)
+    tinsert(parts, "}")
+    
+    return tconcat(parts)
+end
+
+
+local function SafeDateAndTime()
+    local now = date("*t")
+    local t = GetTime()
+    local ms = floor((t - floor(t)) * 1000 + 0.5)
+    return format("%d-%02d-%02d %02d-%02d-%02d.%03d", now.year, now.month, now.day, now.hour, now.min, now.sec, ms)
+end
+
+
 local function UnitGUID(unit)
     local _, guid = UnitExists(unit)
     return guid
 end
-
 
 
 local UnitInLoS -- if unitxp service pack 3 exists
@@ -365,6 +416,42 @@ local function UnitHasDebuff(unit, texture)
 		debuff = UnitDebuff(unit, i)
 	end
 	return nil
+end
+
+
+local function GetPlayerFacing()
+	local map
+	if (not MethWheelchairMinimapScanner) then
+		map = CreateFrame("Minimap", "MethWheelchairMinimapScanner", UIParent)
+		map:SetWidth(0)
+		map:SetHeight(0)
+		map:SetPoint("TOPRIGHT", 0, 0)
+		map:Show()
+	else
+		map = MethWheelchairMinimapScanner
+	end
+
+	if (not playerModel) then
+		-- create custom minimap and try to hide everything from player
+		-- needed due to player arrow not updating while original minimap
+		-- is closed or hidden and the worldmap player arrow updates only
+		-- when shown
+		local model;
+		for _,v in ipairs({map:GetChildren()}) do
+			if (v:GetFrameType() == "Model") then
+				model = v
+				if (not model:GetName()) then
+					--Print(model:GetModel())
+					if (strfind(model:GetModel(), "Minimap\\MinimapArrow")) then	
+						playerModel = model
+					end
+					model:SetModelScale(0)
+				end
+			end
+		end
+	end
+	
+	return playerModel:GetFacing()
 end
 
 
@@ -968,6 +1055,10 @@ function MethWheelchair.Unbind(castDuration)
 end
 
 
+function MethWheelchair.GetShackleCastTime()
+    return ShackleCastTime
+end
+
 function MethWheelchair.PrintKeybinds()
     PrintKeybinds()
 end
@@ -1291,17 +1382,7 @@ end)
 end
 
 
-local function ColorVersion(version)
-    if (not tonumber(version)) then
-        return"\124cffff0000"..version.."\124r"
-    elseif (tonumber(version) < GetAddonVersion()) then
-        return"\124cffff0000"..version.."\124r"
-    elseif (tonumber(version) > GetAddonVersion()) then
-        return "\124cffffff00"..version.."\124r"
-    elseif (tonumber(version) == GetAddonVersion()) then
-        return "\124cff00ff00"..version.."\124r"
-    end
-end
+
 
 -- CHAT_MSG_ADDON
 RegisterEvent("CHAT_MSG_ADDON",
@@ -1393,6 +1474,14 @@ function()
                 SendAddonMessage(ADDON_PREFIX, msg, "RAID")
             end
 
+            if (args[3] == "diagnostics") then
+                local requester = args[2]
+                local name = UnitName("PLAYER")
+                local configContent = SerializeTable(METHWHEELCHAIR_CONFIG)
+
+                local msg = "answer;"..requester..";diagnostics;"..name..";"..configContent..";"
+                SendAddonMessage(ADDON_PREFIX, msg, "RAID")
+            end
 
         elseif (args[1] == "answer" and args[2] == UnitName("PLAYER")) then
 
@@ -1451,6 +1540,14 @@ function()
                 Print("Total map position critical fails: "..sender..": "..value)
             end
 
+            if (args[3] == "diagnostics") then
+                local sender = args[4]
+                local value = args[5]
+
+                local fileName = "MethWheelchair_" .. SafeDateAndTime() .. "_" .. sender
+                ExportFile(fileName, value)
+            end
+
         end
 
     end
@@ -1495,7 +1592,6 @@ end
 
 
 local function TryUnbindMouse()
-    local badRMB = false
     -- only one mouse button at a time
     if (METHWHEELCHAIR_CONFIG.MUTUAL_MOUSE_BLOCK and ShackleCastTime ~= 0) then
         if (LmbDown == true) then
@@ -1503,7 +1599,6 @@ local function TryUnbindMouse()
             if (RmbDown == false and rmbKeybind ~= nil) then
                 -- unbind RMB
                 SetBinding(RmbKeybind, nil)
-                badRMB = true
                 if (MouseButtonDebug) then
                     Print("RMB unbound")
                 end
@@ -1539,40 +1634,23 @@ local function TryUnbindMouse()
     end
 
     -- if player is keyboard-turning during shackle, disable right-click so he can't use it to move sideways
-    if (ShackleCastTime ~= 0 and IsPlayerKeybaordTurning()) then
-        local rmbKeybind = GetBindingKey(RMB_ACTION)
-        if (rmbKeybind ~= nil) then
-            MouselookStop()
-            SetBinding(RmbKeybind, nil) -- unbind RMB
-            badRMB = true
-            if (MethWheelchair_RotatorWarning) then
-                if (not MethWheelchair_RotatorWarning:IsShown()) then
-                    MethWheelchair_RotatorWarning.StartTime = GetTime()
-                    MethWheelchair_RotatorWarning:Show()
+    if (ShackleCastTime ~= 0) then
+        if (IsPlayerKeyboardTurning()) then
+            local rmbKeybind = GetBindingKey(RMB_ACTION)
+            if (rmbKeybind ~= nil) then
+                MouselookStop() -- cancel right-click
+                SetBinding(RmbKeybind, nil) -- unbind RMB
+
+                if (MethWheelchair_RotatorWarning and (not MethWheelchair_RotatorWarning:IsShown())) then
                     MethWheelchair_RotatorWarning_Text1:Hide()
                     MethWheelchair_RotatorWarning_Text2:Hide()
+                    MethWheelchair_RotatorWarning:Show()
                 end
             end
         end
     end
 
-    if (not badRMB) then
-        -- restore RMB
-        local rmbKeybind = GetBindingKey(RMB_ACTION)
-        if (not rmbKeybind) then
-            SetBinding(RmbKeybind, RMB_ACTION)
-            MouselookStop()
-            if (MouseButtonDebug) then
-                Print("RMB restored")
-            end
-        end
-        if (MethWheelchair_RotatorWarning) then
-            MethWheelchair_RotatorWarning.StartTime = nil
-            MethWheelchair_RotatorWarning:Hide()
-            MethWheelchair_RotatorWarning_Text1:Hide()
-            MethWheelchair_RotatorWarning_Text2:Hide()
-        end
-    end
+
 end
 
 
@@ -2021,27 +2099,11 @@ local function HandleSettingCheck()
 end
 
 
-
-EventFrame:SetScript("OnUpdate", function()
-    if (EarlyUnbindTime and GetTime() > EarlyUnbindTime) then
-        MethWheelchair.Unbind(EarlyUnbindAddedCastDuration)
-        EarlyUnbindTime = nil
-        EarlyUnbindAddedCastDuration = 0
-    end
-
-    -- check if player is keyboard-turning
-    local facing = GetPlayerFacing()
-	if ((LastFacing and facing ~= LastFacing) and (not IsMouselooking())) then
-		PlayerKeyboardTurning = true
-	else
-		PlayerKeyboardTurning = false
-	end
-	LastFacing = facing
-
+local function GetPlayerPosition()
     -- check if player is moving and try to unbind keybinds if scheduled
     if (SUPERWOW_VERSION and METHWHEELCHAIR_CONFIG.SUPERWOW) then
         local px, py = UnitPosition("PLAYER")
-        TryUnbind(px, py)
+        return px, py
 
     -- non superwow position, hope map is correctly bound in "The Rock of Desolation" zone
     elseif (ShouldUnbind -- check to prevent lags while map is open, can result in one frame delay
@@ -2069,8 +2131,31 @@ EventFrame:SetScript("OnUpdate", function()
             METHWHEELCHAIR_CONFIG.TOTAL_MAP_POSITION_CRITICAL_FAILS = METHWHEELCHAIR_CONFIG.TOTAL_MAP_POSITION_CRITICAL_FAILS + 1
         end
 
-        TryUnbind(px, py)
+        return px, py
     end
+
+    return 0.0, 0.0
+end
+
+
+EventFrame:SetScript("OnUpdate", function()
+    if (EarlyUnbindTime and GetTime() > EarlyUnbindTime) then
+        MethWheelchair.Unbind(EarlyUnbindAddedCastDuration)
+        EarlyUnbindTime = nil
+        EarlyUnbindAddedCastDuration = 0
+    end
+
+    -- check if player is keyboard-turning
+    local facing = GetPlayerFacing()
+	if ((LastFacing and facing ~= LastFacing) and (not IsMouselooking())) then
+		PlayerKeyboardTurning = true
+	else
+		PlayerKeyboardTurning = false
+	end
+	LastFacing = facing
+
+    local px, py = GetPlayerPosition()
+    TryUnbind(px, py)
 
     local currentTime = GetTime()
     -- debuff lasts 6 sec, 0.5 sec for error
@@ -2511,6 +2596,13 @@ local function CmdQuery(msg)
         return true
     end
 
+    if (args[2] == "diagnostics") then
+        local message = "query;"..playerName..";diagnostics;"
+        SendAddonMessage(ADDON_PREFIX, message, "RAID")
+        Print("\124cff00ff00Initializing raid disgnostics check...\124r")
+        return true
+    end
+
     Print("\124cffff0000Invalid query!\124r")
 
     return true
@@ -2681,7 +2773,8 @@ end
 -------------------------------------------------------------------------------------------
 
 
-
+local TestPosition_X = 0
+local TestPosition_Y = 0
 local TestEventFrame = CreateFrame("FRAME")
 TestEventFrame:Hide()
 TestEventFrame:SetScript("OnUpdate", function()
@@ -2701,11 +2794,14 @@ TestEventFrame:SetScript("OnUpdate", function()
         end
     end
 
+    local px, py = GetPlayerPosition()
+
     if (TestEventFrame.TestEndTime) then
         local now = GetTime()
+        
 
         -- shackle shatter, 0.1 sec delay because of OnUpdate order
-        if ((not TestEventFrame.TestStartTime) and (not Unbound)
+        if ((not TestEventFrame.TestStartTime) and ((not Unbound) or px ~= TestPosition_X or py ~= TestPosition_Y)
             and (now > TestEventFrame.TestEndTime - (ShackleDuration + 0.4))
         ) then
             FullScreenEffect.Texture:SetTexture(0.9, 0.1, 0.1, 0.4)
@@ -2720,6 +2816,9 @@ TestEventFrame:SetScript("OnUpdate", function()
             MethWheelchair.ShowUI()
         end
     end
+
+    TestPosition_X = px
+    TestPosition_Y = py
 end)
 
 
