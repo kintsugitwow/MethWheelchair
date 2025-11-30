@@ -804,6 +804,10 @@
                     text1:Hide()
                     text2:Hide()
                 end
+
+                if (MethWheelchair and MethWheelchair.GetShackleCastTime() == 0) then
+                    this:Hide()
+                end
             </OnUpdate>
         </Scripts>
 

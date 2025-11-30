@@ -2798,7 +2798,6 @@ TestEventFrame:SetScript("OnUpdate", function()
 
     if (TestEventFrame.TestEndTime) then
         local now = GetTime()
-        
 
         -- shackle shatter, 0.1 sec delay because of OnUpdate order
         if ((not TestEventFrame.TestStartTime) and ((not Unbound) or px ~= TestPosition_X or py ~= TestPosition_Y)
@@ -2814,6 +2813,7 @@ TestEventFrame:SetScript("OnUpdate", function()
             TestInProgress = false
             TestEventFrame.TestEndTime = nil
             MethWheelchair.ShowUI()
+            TestEventFrame:Hide()
         end
     end
 
