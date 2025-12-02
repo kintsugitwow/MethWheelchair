@@ -336,8 +336,10 @@
                             <OnClick>
                                 if (this:GetChecked() == 1) then
                                     METHWHEELCHAIR_CONFIG.ADDITIONAL_FULLSCREENEFFECTS = true
+                                    MethWheelchair.FullScreenEffect:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE")
                                 else
                                     METHWHEELCHAIR_CONFIG.ADDITIONAL_FULLSCREENEFFECTS = false
+                                    MethWheelchair.FullScreenEffect:UnregisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE")
                                 end
                             </OnClick>
                         </Scripts>
