@@ -122,6 +122,7 @@ local ShackleCastTime = 0
 local EarlyUnbindTime = nil
 local EarlyUnbindAddedCastDuration = 0
 local ExpectedShackleCastEventTime = 0
+local PreviousExpectedShackleCastEventTime = 0
 local ExpectedShackleCastEventMouselookStopThreshold = 0.15
 
 local ShackleSpellID = 51916
@@ -192,6 +193,7 @@ if (DEBUG_MODE) then
     -- ids
     tinsert(ShackleSpellIDTriggers, 2060) -- Greater Heal (Rank 1)
     tinsert(ShackleShatterSpellIDTriggers, 2061) -- Flash Heal (Rank 1)
+    tinsert(ShackleShatterSpellIDTriggers, 168)
     -- textures
     tinsert(ShackleTextureTriggers, "AshesToAshes") -- Weakened Soul
     -- no autorun subzones
@@ -1369,18 +1371,27 @@ function()
     end
 
     if (METHWHEELCHAIR_CONFIG.SHOW_GUILTY) then
-        if (IsShackleShatterSpellID(spellID) and (casterGUID == targetGUID) and (eventType == "CAST")) then
-            local name = UnitName(casterGUID)
-            local color = GetClassColor(casterGUID)
-            Print("\124cff" .. color .. name .. "\124r \124cffff0000shattered\124r \124cffa044b9Shackles of the Legion\124r!")
+        if (eventType == "CAST") then
+            if (IsShackleShatterSpellID(spellID)
+                and (casterGUID == targetGUID)
+            ) then
+                local name = UnitName(casterGUID)
+                local color = GetClassColor(casterGUID)
+
+                local expectedTime = ExpectedShackleCastEventTime
+                if (expectedTime == 0) then
+                    expectedTime = PreviousExpectedShackleCastEventTime
+                end
+
+                Print("\124cff" .. color .. name .. "\124r \124cffff0000shattered\124r \124cffa044b9Shackles of the Legion\124r! ("
+                    .. strformat("%.3f", GetTime() - (expectedTime or 0)) .. ")")
+            end
         end
     end
 end)
 
 
--- CHAT_MSG_RAID_BOSS_EMOTE
-RegisterEvent("CHAT_MSG_RAID_BOSS_EMOTE",
-function()
+local function HandleRaidEmote()
     if (IsShackleEmote(arg1)) then
         if (METHWHEELCHAIR_CONFIG.EARLY_UNBIND
             and ((not SUPERWOW_VERSION) or (not METHWHEELCHAIR_CONFIG.SUPERWOW))
@@ -1391,6 +1402,13 @@ function()
 
         ExpectedShackleCastEventTime = GetTime() + ShackleCastDuration
     end
+end
+
+
+-- CHAT_MSG_RAID_BOSS_EMOTE
+RegisterEvent("CHAT_MSG_RAID_BOSS_EMOTE",
+function()
+    HandleRaidEmote()
 end)
 
 
@@ -1398,16 +1416,7 @@ if (DEBUG_MODE) then
 -- CHAT_MSG_WHISPER
 RegisterEvent("CHAT_MSG_WHISPER", -- test
 function()
-    if (IsShackleEmote(arg1)) then
-        if (METHWHEELCHAIR_CONFIG.EARLY_UNBIND
-            and ((not SUPERWOW_VERSION) or (not METHWHEELCHAIR_CONFIG.SUPERWOW))
-        ) then
-            EarlyUnbindAddedCastDuration = ShackleCastDuration - (METHWHEELCHAIR_CONFIG.EARLY_UNBIND_VALUE / 1000)
-            EarlyUnbindTime = GetTime() + EarlyUnbindAddedCastDuration
-        end
-
-        ExpectedShackleCastEventTime = GetTime() + ShackleCastDuration
-    end
+    HandleRaidEmote()
 end)
 end
 
@@ -1628,9 +1637,6 @@ local function TryUnbind(px, py)
             ShouldUnbind = false
         end
     end
-
-    PreviousPosition_X = px
-    PreviousPosition_Y = py
 end
 
 
@@ -1697,16 +1703,23 @@ local function TryUnbindMouse()
 end
 
 
-local function TryStopMouselookBeforeShackle(updateTime)
+local function TryStopMouselookBeforeShackle(updateTime, px, py)
     -- make sure it's executed in update loop
     if (ExpectedShackleCastEventTime ~= 0) then
         if ((ExpectedShackleCastEventTime - updateTime) < ExpectedShackleCastEventMouselookStopThreshold) then
-            if (LmbDown) then
+            if (
+                -- rely only on left mouse button event
+                (LmbDown)
+                or
+                -- stop if player is moving sideways by pressing Turn Left or Turn Right + Right Mouse Button
+                (PreviousPosition_X ~= px or PreviousPosition_Y ~= py)
+            ) then
                 MouselookStop()
             end
         end
 
         if (ExpectedShackleCastEventTime < updateTime) then
+            PreviousExpectedShackleCastEventTime = ExpectedShackleCastEventTime
             ExpectedShackleCastEventTime = 0
         end
     end
@@ -2375,7 +2388,7 @@ EventFrame:SetScript("OnUpdate", function()
         Print("Movement \124cff00ff00restored\124r.")
     end
 
-    TryStopMouselookBeforeShackle(updateTime)
+    TryStopMouselookBeforeShackle(updateTime, px, py)
 
     TryUnbindMouse()
 
@@ -2385,6 +2398,9 @@ EventFrame:SetScript("OnUpdate", function()
         HandleUXPSP3Check()
         HandleSettingCheck()
     end
+
+    PreviousPosition_X = px
+    PreviousPosition_Y = py
 end)
 
 

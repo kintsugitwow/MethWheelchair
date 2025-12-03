@@ -1,4 +1,4 @@
-# MethWheelchair 1.13
+# MethWheelchair 1.14
 
 Disables movement keybinds after standing still for at least one frame after Mephistroth finishes casting Shackles of the Legion.<br>
 After the debuff is gone or after 6.5 secs of cast event re-enables keybinds.<br>
@@ -42,7 +42,7 @@ Use ``/mw eu <number_value>`` to set early unbind value (replace ``<number_value
 
 - During Shackle there is only one mouse button pressed at a time allowed. This will fail if both mouse buttons trigger MouseDown event during same frame. This shouldn't be an issue for SuperWoW users, due to solution in section above, but will result in Shackle Shatter in the case of non-SuperWoW user.
 
-- Another way to Shatter Shackle (still possible but harder since v1.13):<br>
+- Another way to Shatter Shackle (since v1.13 this counts as regular walking backwards that doesn't unbind keybinds):<br>
     **1.** Press Right Mouse Button<br>
     **2.** Press Left Mouse Button<br>
     **3.** Press S - Stop moving<br>
